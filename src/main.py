@@ -1,5 +1,6 @@
-from src.models.pubmed_pico import PubMedPicoModel
-from src.models.specter2 import SPECTER2Model
+from src.models.artsy import ARTSY
+from src.train import FullConfig, train_artsy
+
 
 papers = [
     {
@@ -8,12 +9,6 @@ papers = [
     },
 ]
 
+cfg = FullConfig()
 
-pubmed_pico = PubMedPicoModel()
-specter2 = SPECTER2Model()
-
-pico = pubmed_pico.predict_pico(papers[0]["abstract"])
-embed = specter2.get_embedding(papers)[0]
-
-print(embed)
-print(pico)
+train_artsy(cfg)

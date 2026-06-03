@@ -16,6 +16,14 @@
       python = pkgs.python3.override {
         packageOverrides = new: old: {
           torch = pkgs.python3Packages.torchWithCuda;
+          umap-learn = old.umap-learn.overridePythonAttrs (oldAttrs: {
+            doCheck = false;
+            dontCheck = false;
+          });
+          pynndescent = old.pynndescent.overridePythonAttrs (oldAttrs: {
+            doCheck = false;
+            dontCheck = false;
+          });
           huggingface-hub = pkgs.python3Packages.huggingface-hub_0;
           transformers = old.transformers_4.overridePythonAttrs (old: {
             dependencies = map (
@@ -33,19 +41,21 @@
         buildInputs = with pkgs; [
           (python.withPackages (
             ps: with ps; [
-              torch-geometric
-              seqeval
-              transformers
-              peft
-              sentence-transformers
-              lightning
               joblib
-              nltk
-              wandb
-              pytest
+              plotly
+              lightning
               matplotlib
-              pandas
               networkx
+              nltk
+              pandas
+              peft
+              pytest
+              sentence-transformers
+              seqeval
+              torch-geometric
+              transformers
+              umap-learn
+              wandb
               (buildPythonPackage rec {
                 pname = "adapters";
                 version = "1.3.0";
