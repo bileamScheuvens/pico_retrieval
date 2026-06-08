@@ -1,0 +1,9 @@
+defaults:
+  - base_model
+  - pico_extractor: pubmed_pico
+  - paper_embedder: specter2
+  - _self_
+
+lr: 5e-3
+l2_lambda: 1e-4
+temperature: 1

@@ -1,10 +1,16 @@
-from dataclasses import dataclass
+import json
+from src.utils.configs import SciDocDataConfig
 import os
 from pathlib import Path
 import lightning as L
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 from src.constants import DATAPATH
+
+
+def load_pubmed():
+    with open(DATAPATH / "pubmed" / "pubmed_new.jsonl", "r") as f:
+        return json.load(f)
 
 
 def load_ebm():
@@ -37,14 +43,6 @@ class SciDocDataset(Dataset):
     def __getitem__(self, idx):  # ty:ignore[invalid-method-override]
         pmid = self.pmids[idx]
         return self.titles[pmid], self.abstracts[pmid]
-
-
-@dataclass
-class SciDocDataConfig:
-    batch_size: int = 16
-    train_ratio: float = 0.9
-    val_ratio: float = 0.1
-    seed: int = 161
 
 
 class SciDocDatamodule(L.LightningDataModule):

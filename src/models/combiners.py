@@ -3,13 +3,28 @@ from torch.distributions import MultivariateNormal
 import lightning as L
 
 
+def get_fitting_combiner(embed_type):
+    if embed_type == "prob":
+        return MpcCombiner()
+    return LinearCombiner()
+
+
+class LinearCombiner(L.LightningModule):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, embeddings):
+        raise NotImplementedError
+
+
 class MpcCombiner(L.LightningModule):
     """Multimodal Probabilistic Composer from neculai2022probabilistic"""
 
     def __init__(self):
         super().__init__()
 
-    def forward(self, embeddings):
+    def forward(self, embeddings, agg=None):
+        """Combine embeddings. Optionally takes aggregator instead of returning result."""
         prior_mean = embeddings[0][0]
         prior_variance = embeddings[0][1]
         log_z_total = 0
@@ -24,7 +39,15 @@ class MpcCombiner(L.LightningModule):
             prior_mean = posterior_mean
             prior_variance = posterior_variance
 
-        return posterior_mean, posterior_variance.squeeze(-2), log_z_total
+        combined = {
+            "mean": posterior_mean,
+            "variance": posterior_variance.squeeze(-2),
+            "log_z": log_z_total,
+        }
+        if agg is not None:
+            for k, v in combined.items():
+                agg[k].append(v)
+        return combined
 
 
 def product_2_gaussians(mean1, variance1, mean2, variance2):

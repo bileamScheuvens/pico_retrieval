@@ -1,11 +1,12 @@
+from src.models.text_embedders import SentenceTransformerModel
+from torch import nn
+from src.models import PicoExtractor
+from src.utils.configs import PubMedPicoConfig
 from collections import defaultdict
 
-import lightning as L
 import torch
 
-from pydantic.dataclasses import dataclass
 from joblib import Memory
-from sentence_transformers import SentenceTransformer
 from seqeval.metrics.sequence_labeling import get_entities
 
 from src.models.prob_encoder import ProbabilisticEncoder
@@ -13,7 +14,7 @@ from src.models.prob_encoder import ProbabilisticEncoder
 ## monkeypatch NERDA
 import transformers
 
-transformers.AdamW = torch.optim.AdamW
+transformers.AdamW = torch.optim.AdamW  # ty:ignore[unresolved-attribute]
 _strict_load = torch.nn.Module.load_state_dict
 
 
@@ -21,23 +22,14 @@ def _unstrict_load(self, state_dict, strict=False, **kwargs):
     return _strict_load(self, state_dict, strict=strict, **kwargs)
 
 
-torch.nn.Module.load_state_dict = _unstrict_load
+torch.nn.Module.load_state_dict = _unstrict_load  # ty:ignore[invalid-assignment]
 
-from NERDA.models import NERDA
+from NERDA.models import NERDA  # noqa: E402
 
-from src.constants import MODELPATH, CACHEPATH
-
-
-@dataclass
-class PubMedPicoConfig:
-    base_url: str = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
-    text_embedder_url: str = "neuml/pubmedbert-base-embeddings"
-    max_len: int = 512
-    hidden_dim: int = 256
-    shared_dim: int = 128
+from src.constants import MODELPATH, CACHEPATH  # noqa: E402
 
 
-class PubMedPicoModel(L.LightningModule):
+class PubMedPicoModel(PicoExtractor):
     def __init__(self, cfg: PubMedPicoConfig):
         super().__init__()
         tag_scheme = [
@@ -77,14 +69,28 @@ class PubMedPicoModel(L.LightningModule):
         self.extract_pico = self.memory.cache(_extract_pico)
 
         # get point embeddings from pico
-        self.text_encoder = SentenceTransformer(cfg.text_embedder_url)
+        self.text_encoder = SentenceTransformerModel(cfg.text_embedder_url)
 
-        # turn point embeddings to gaussian
-        self.prob_encoder = ProbabilisticEncoder(
-            self.text_encoder.get_sentence_embedding_dimension(),
-            cfg.hidden_dim,
-            cfg.shared_dim,
-        )
+        if cfg.use_prob_encoder:
+            # turn point embeddings to gaussian
+            self.pico_head = ProbabilisticEncoder(
+                self.text_encoder.embed_dim,
+                cfg.hidden_dim,
+                cfg.shared_dim,
+            )
+        else:
+            self.pico_head = nn.Sequential(
+                nn.Linear(self.text_encoder.embed_dim, cfg.hidden_dim),
+                nn.GELU(),
+                nn.LayerNorm(cfg.hidden_dim),
+                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
+            )
+
+    @property
+    def embed_type(self):
+        if self.cfg.use_prob_encoder:
+            return "prob"
+        return "point"
 
     def forward(self, text):
         PICO = self.extract_pico(text)
@@ -94,14 +100,7 @@ class PubMedPicoModel(L.LightningModule):
         for pico_type in ["Patient", "Intervention", "Control", "Outcome"]:
             elements = PICO[pico_type] or [""]
             for e in elements:
-                with torch.no_grad():
-                    point_embed = (
-                        self.text_encoder.encode(
-                            f"{pico_type}: {e}", convert_to_tensor=True
-                        )
-                        .clone()
-                        .to(self.device)
-                    )
-                prob_embed = self.prob_encoder(point_embed)
-                pico_embeddings.append(prob_embed)
+                point_embed = self.text_encoder(f"{pico_type}: {e}")
+                final_embed = self.pico_head(point_embed)
+                pico_embeddings.append(final_embed)
         return pico_embeddings

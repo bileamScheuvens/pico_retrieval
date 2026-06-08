@@ -1,23 +1,16 @@
+from torch import nn
 import torch
-from src.constants import CACHEPATH
-from joblib import Memory
-from src.models.prob_encoder import ProbabilisticEncoder
-from dataclasses import dataclass
-from transformers import AutoTokenizer
 from adapters import AutoAdapterModel
-import lightning as L
+from joblib import Memory
+from transformers import AutoTokenizer
+
+from src.constants import CACHEPATH
+from src.models import PaperEmbedder
+from src.models.prob_encoder import ProbabilisticEncoder
+from src.utils.configs import SPECTER2Config
 
 
-@dataclass
-class SPECTER2Config:
-    base_url: str = "allenai/specter2_base"
-    adapter: str = "proximity"
-    max_len: int = 512
-    hidden_dim: int = 256
-    shared_dim: int = 128
-
-
-class SPECTER2Model(L.LightningModule):
+class SPECTER2Model(PaperEmbedder):
     def __init__(self, cfg: SPECTER2Config):
         super().__init__()
         self.cfg = cfg
@@ -58,9 +51,32 @@ class SPECTER2Model(L.LightningModule):
             cfg.hidden_dim,
             cfg.shared_dim,
         )
+        if cfg.use_prob_encoder:
+            # turn point embeddings to gaussian
+            self.paper_head = ProbabilisticEncoder(
+                self.model.config.hidden_size,
+                cfg.hidden_dim,
+                cfg.shared_dim,
+            )
+        else:
+            self.paper_head = nn.Sequential(
+                nn.Linear(self.model.config.hidden_size, cfg.hidden_dim),
+                nn.GELU(),
+                nn.LayerNorm(cfg.hidden_dim),
+                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
+            )
+
+    @property
+    def embed_type(self):
+        if self.cfg.use_prob_encoder:
+            return "prob"
+        return "point"
 
     def forward(self, batch):
         doc_embeddings = []
         for doc in batch:
             doc_embeddings.append(self.embed_paper(doc).to(self.device))
-        return self.prob_encoder(torch.cat(doc_embeddings))  # [B, shared_dim]
+        paper_means, paper_variances = self.paper_head(
+            torch.cat(doc_embeddings)
+        )  # [B, shared_dim]
+        return paper_means, paper_variances

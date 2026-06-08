@@ -1,0 +1,8 @@
+experiment_name: test
+
+defaults:
+  - model: default
+  - data: default
+  - trainer: default
+  - wandb: default
+  - _self_

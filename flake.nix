@@ -18,11 +18,12 @@
           torch = pkgs.python3Packages.torchWithCuda;
           umap-learn = old.umap-learn.overridePythonAttrs (oldAttrs: {
             doCheck = false;
-            dontCheck = false;
+          });
+          biopython = old.biopython.overridePythonAttrs (oldAttrs: {
+            doCheck = false;
           });
           pynndescent = old.pynndescent.overridePythonAttrs (oldAttrs: {
             doCheck = false;
-            dontCheck = false;
           });
           huggingface-hub = pkgs.python3Packages.huggingface-hub_0;
           transformers = old.transformers_4.overridePythonAttrs (old: {
@@ -42,6 +43,9 @@
           (python.withPackages (
             ps: with ps; [
               joblib
+              hydra-core
+              omegaconf
+              biopython
               plotly
               lightning
               matplotlib

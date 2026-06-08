@@ -1,0 +1,9 @@
+defaults:
+  - base_specter2
+
+base_url: allenai/specter2_base
+adapter: proximity
+max_len: 512
+use_prob_encoder: true
+hidden_dim: 256
+shared_dim: 128

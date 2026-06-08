@@ -10,7 +10,9 @@ class ProbabilisticEncoder(L.LightningModule):
         )
         self.mu_head = nn.Linear(hidden_dim, shared_dim)
         self.logsigma_head = nn.Linear(hidden_dim, shared_dim)
+        self.clamp_val = 5
 
     def forward(self, x):
         x = self.backbone(x)
-        return self.mu_head(x), self.logsigma_head(x)
+        clamped_logsigma = self.logsigma_head(x).clamp(-self.clamp_val, self.clamp_val)
+        return self.mu_head(x), clamped_logsigma

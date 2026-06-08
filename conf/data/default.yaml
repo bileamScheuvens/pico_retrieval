@@ -1,0 +1,6 @@
+defaults:
+  - base_data
+batch_size: 16
+train_ratio: 0.9
+val_ratio: 0.1
+seed: 161

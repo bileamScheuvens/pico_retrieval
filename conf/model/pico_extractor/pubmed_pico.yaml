@@ -1,0 +1,10 @@
+defaults:
+  - base_pubmed_pico
+base_url: microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract
+text_embedder_url: neuml/pubmedbert-base-embeddings
+text_embed_type: SENTENCE
+use_prob_encoder: true
+
+max_len: 512
+hidden_dim: 256
+shared_dim: 128
