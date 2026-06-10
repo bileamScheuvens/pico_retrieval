@@ -1,7 +1,9 @@
+import wandb
 from collections import defaultdict
 from src.utils.configs import ARTSYConfig
 import torch
-from src.metrics.plots import plot_means
+from src.metrics import mean_l2, mean_sim
+from src.metrics.plots import plot_means_plotly
 from src.models.combiners import get_fitting_combiner
 from src.losses import get_fitting_criterion
 from src.models.specter2 import SPECTER2Model
@@ -92,7 +94,7 @@ class ARTSY(L.LightningModule):
         return metrics["train/loss"]
 
     def on_validation_start(self):
-        self.umap_buffer = {"pico_means": [], "paper_means": []}
+        self.umap_buffer = {"pico_means": [], "paper_means": [], "titles": []}
         self.val_batch_count = 0
 
     def validation_step(self, batch, batch_idx):
@@ -102,18 +104,30 @@ class ARTSY(L.LightningModule):
             **preds,
             prefix="val",
         )
+        mean_l2_correct, mean_l2_incorrect = mean_l2(
+            preds["paper_means"], preds["pico_means"]
+        )
+        mean_sim_correct, mean_sim_incorrect = mean_sim(
+            preds["paper_means"], preds["pico_means"]
+        )
+        metrics["val/mean_l2_correct"] = mean_l2_correct
+        metrics["val/mean_l2_incorrect"] = mean_l2_incorrect
+        metrics["val/mean_sim_correct"] = mean_sim_correct
+        metrics["val/mean_sim_incorrect"] = mean_sim_incorrect
         self.log_dict(metrics, batch_size=len(batch[0]))
-        if self.val_batch_count < 5:
+        if self.val_batch_count < 3:
             self.umap_buffer["pico_means"].append(preds["pico_means"])
-            self.umap_buffer["paper_means"].append(preds["pico_means"])
+            self.umap_buffer["paper_means"].append(preds["paper_means"])
+            self.umap_buffer["titles"].extend(batch[0])
         return metrics["val/loss"]
 
     def on_validation_end(self):
         self.logger.experiment.log(  # ty:ignore[unresolved-attribute]
             {
-                "mean_umap": plot_means(
+                "mean_umap": plot_means_plotly(
                     torch.cat(self.umap_buffer["pico_means"]),
                     torch.cat(self.umap_buffer["paper_means"]),
+                    paper_titles=self.umap_buffer["titles"],
                 )
             }
         )

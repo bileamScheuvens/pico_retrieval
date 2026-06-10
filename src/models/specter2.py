@@ -1,10 +1,8 @@
 from torch import nn
 import torch
 from adapters import AutoAdapterModel
-from joblib import Memory
 from transformers import AutoTokenizer
 
-from src.constants import CACHEPATH
 from src.models import PaperEmbedder
 from src.models.prob_encoder import ProbabilisticEncoder
 from src.utils.configs import SPECTER2Config
@@ -28,23 +26,6 @@ class SPECTER2Model(PaperEmbedder):
         )
         for p in self.model.parameters():
             p.requires_grad = False
-
-        # cache specter embeddings:
-        def _embed_paper(paper):
-            inputs = self.tokenizer(
-                paper,
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
-                return_token_type_ids=False,
-                max_length=self.cfg.max_len,
-            ).to(self.device)
-            output = self.model(**inputs)
-            # take the first token in the batch as the embedding
-            return output.last_hidden_state[:, 0, :]
-
-        self.memory = Memory(CACHEPATH, verbose=0)
-        self.embed_paper = self.memory.cache(_embed_paper)
 
         self.prob_encoder = ProbabilisticEncoder(
             self.model.config.hidden_size,
@@ -71,6 +52,19 @@ class SPECTER2Model(PaperEmbedder):
         if self.cfg.use_prob_encoder:
             return "prob"
         return "point"
+
+    def embed_paper(self, paper):
+        inputs = self.tokenizer(
+            paper,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+            return_token_type_ids=False,
+            max_length=self.cfg.max_len,
+        ).to(self.device)
+        output = self.model(**inputs)
+        # take the first token in the batch as the embedding
+        return output.last_hidden_state[:, 0, :]
 
     def forward(self, batch):
         doc_embeddings = []

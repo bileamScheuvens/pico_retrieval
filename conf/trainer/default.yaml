@@ -1,6 +1,6 @@
 defaults:
   - base_trainer
-precision: "16"
-val_check_interval: 50
-log_every_n_steps: 10
-limit_val_batches: 10
+precision: "16-mixed"
+val_check_interval: 150
+log_every_n_steps: 25
+limit_val_batches: 15

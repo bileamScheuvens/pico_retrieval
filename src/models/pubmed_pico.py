@@ -98,6 +98,8 @@ class PubMedPicoModel(PicoExtractor):
         pico_embeddings = []
         # TODO introduce max number of elements and pad for batching?
         for pico_type in ["Patient", "Intervention", "Control", "Outcome"]:
+            if pico_type not in self.cfg.considered_elements:
+                continue
             elements = PICO[pico_type] or [""]
             for e in elements:
                 point_embed = self.text_encoder(f"{pico_type}: {e}")

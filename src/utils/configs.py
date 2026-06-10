@@ -2,6 +2,7 @@ from omegaconf import OmegaConf
 from enum import Enum
 from dataclasses import dataclass
 from hydra.core.config_store import ConfigStore
+import lightning as L
 
 cs = ConfigStore()
 
@@ -12,6 +13,8 @@ class SciDocDataConfig:
     train_ratio: float
     val_ratio: float
     seed: int
+    use_ebm_nlp: bool
+    use_pubmed_rct: bool
 
 
 cs.store(group="data", name="base_data", node=SciDocDataConfig)
@@ -51,6 +54,7 @@ class PubMedPicoConfig:
     text_embed_type: TextEmbedType
     text_embedder_url: str
     use_prob_encoder: bool
+    considered_elements: list[str]
 
 
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)

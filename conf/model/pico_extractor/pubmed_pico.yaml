@@ -4,6 +4,13 @@ base_url: microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract
 text_embedder_url: neuml/pubmedbert-base-embeddings
 text_embed_type: SENTENCE
 use_prob_encoder: true
+considered_elements:
+  - Patient
+# considered_elements:
+# - Patient
+# - Intervention
+# - Control
+# - Outcome
 
 max_len: 512
 hidden_dim: 256

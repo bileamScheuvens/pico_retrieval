@@ -25,25 +25,32 @@ class MpcCombiner(L.LightningModule):
 
     def forward(self, embeddings, agg=None):
         """Combine embeddings. Optionally takes aggregator instead of returning result."""
-        prior_mean = embeddings[0][0]
-        prior_variance = embeddings[0][1]
-        log_z_total = 0
-        for i in range(1, len(embeddings)):
-            posterior_mean, posterior_variance, log_z = product_2_gaussians(
-                prior_mean,
-                prior_variance,
-                embeddings[i][0],
-                embeddings[i][1],
-            )
-            log_z_total += log_z
-            prior_mean = posterior_mean
-            prior_variance = posterior_variance
+        if len(embeddings) == 1:
+            combined = {
+                "mean": embeddings[0][0],
+                "variance": embeddings[0][1],
+                "log_z": torch.zeros(1).to(embeddings[0][0].device),
+            }
+        else:
+            prior_mean = embeddings[0][0]
+            prior_variance = embeddings[0][1]
+            log_z_total = 0
+            for i in range(1, len(embeddings)):
+                posterior_mean, posterior_variance, log_z = product_2_gaussians(
+                    prior_mean,
+                    prior_variance,
+                    embeddings[i][0],
+                    embeddings[i][1],
+                )
+                log_z_total += log_z
+                prior_mean = posterior_mean
+                prior_variance = posterior_variance
 
-        combined = {
-            "mean": posterior_mean,
-            "variance": posterior_variance.squeeze(-2),
-            "log_z": log_z_total,
-        }
+            combined = {
+                "mean": posterior_mean,
+                "variance": posterior_variance.squeeze(-2),
+                "log_z": log_z_total,
+            }
         if agg is not None:
             for k, v in combined.items():
                 agg[k].append(v)

@@ -5,5 +5,5 @@ defaults:
   - _self_
 
 lr: 5e-3
-l2_lambda: 1e-4
+l2_lambda: 1e-5
 temperature: 1

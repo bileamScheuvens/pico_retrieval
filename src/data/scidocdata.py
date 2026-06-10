@@ -9,7 +9,7 @@ from src.constants import DATAPATH
 
 
 def load_pubmed():
-    with open(DATAPATH / "pubmed" / "pubmed_new.jsonl", "r") as f:
+    with open(DATAPATH / "pubmed" / "pubmed.json", "r") as f:
         return json.load(f)
 
 
@@ -25,17 +25,29 @@ def load_ebm():
 
 
 class SciDocDataset(Dataset):
-    def __init__(self):
+    def __init__(self, cfg: SciDocDataConfig):
         super().__init__()
+        self.cfg = cfg
 
-        ebm_nlp = load_ebm()
-        self.pmids = list(ebm_nlp.keys())
+        self.pmids = []
         self.titles = {}
         self.abstracts = {}
-        for pmid, text in ebm_nlp.items():
-            title, abstract = text.split("\n\n", 1)
-            self.titles[pmid] = title
-            self.abstracts[pmid] = abstract
+
+        if cfg.use_ebm_nlp:
+            ebm_nlp = load_ebm()
+            for pmid, text in ebm_nlp.items():
+                title, abstract = text.split("\n\n", 1)
+                self.pmids.append(pmid)
+                self.titles[pmid] = title
+                self.abstracts[pmid] = abstract
+        if cfg.use_pubmed_rct:
+            pubmed = load_pubmed()
+            for pmid, data in pubmed.items():
+                if not data["abstract"]:
+                    continue
+                self.pmids.append(pmid)
+                self.titles[pmid] = data["title"]
+                self.abstracts[pmid] = data["abstract"]
 
     def __len__(self):
         return len(self.pmids)
@@ -54,13 +66,15 @@ class SciDocDatamodule(L.LightningDataModule):
     def setup(self, stage: str):
         if stage == "fit":
             self.train_data, self.val_data = random_split(
-                dataset=SciDocDataset(),
+                dataset=SciDocDataset(self.cfg),
                 lengths=[self.cfg.train_ratio, self.cfg.val_ratio],
                 generator=torch.Generator().manual_seed(self.cfg.seed),
             )
 
     def train_dataloader(self):
-        return DataLoader(self.train_data, batch_size=self.batch_size)
+        return DataLoader(
+            self.train_data, batch_size=self.batch_size, num_workers=4, shuffle=True
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=self.batch_size)
+        return DataLoader(self.val_data, batch_size=self.batch_size, num_workers=4)
