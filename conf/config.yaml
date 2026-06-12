@@ -4,7 +4,7 @@ defaults:
   - model: default
   - data: default
   - trainer: default
-  - wandb: default
+  - logger: default
   - _self_
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled

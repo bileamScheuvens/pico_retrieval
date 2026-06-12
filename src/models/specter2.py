@@ -1,6 +1,8 @@
+from src.constants import MODELPATH
 from torch import nn
 import torch
-from adapters import AutoAdapterModel
+
+import onnxruntime as ort
 from transformers import AutoTokenizer
 
 from src.models import PaperEmbedder
@@ -16,32 +18,21 @@ class SPECTER2Model(PaperEmbedder):
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)
 
         # load base model and freeze
-        self.model = AutoAdapterModel.from_pretrained(cfg.base_url)
-
-        self.model.load_adapter(
-            "allenai/specter2_regression",
-            source="hf",
-            load_as=cfg.adapter,
-            set_active=True,
+        self.specter2_session = ort.InferenceSession(
+            MODELPATH / f"specter2_{cfg.adapter}.onnx"
         )
-        for p in self.model.parameters():
-            p.requires_grad = False
+        self.specter_out_dim = self.specter2_session.get_outputs()[0].shape[-1]
 
-        self.prob_encoder = ProbabilisticEncoder(
-            self.model.config.hidden_size,
-            cfg.hidden_dim,
-            cfg.shared_dim,
-        )
         if cfg.use_prob_encoder:
             # turn point embeddings to gaussian
             self.paper_head = ProbabilisticEncoder(
-                self.model.config.hidden_size,
+                self.specter_out_dim,
                 cfg.hidden_dim,
                 cfg.shared_dim,
             )
         else:
             self.paper_head = nn.Sequential(
-                nn.Linear(self.model.config.hidden_size, cfg.hidden_dim),
+                nn.Linear(self.specter_out_dim, cfg.hidden_dim),
                 nn.GELU(),
                 nn.LayerNorm(cfg.hidden_dim),
                 nn.Linear(cfg.hidden_dim, cfg.shared_dim),
@@ -58,13 +49,15 @@ class SPECTER2Model(PaperEmbedder):
             paper,
             padding=True,
             truncation=True,
-            return_tensors="pt",
+            return_tensors="np",
             return_token_type_ids=False,
             max_length=self.cfg.max_len,
-        ).to(self.device)
-        output = self.model(**inputs)
+        ).to(self.device)  # ty:ignore[call-non-callable]
+
+        output = self.specter2_session.run(["last_hidden_state"], inputs)[0]
+
         # take the first token in the batch as the embedding
-        return output.last_hidden_state[:, 0, :]
+        return torch.tensor(output[:, 0, :])  # ty:ignore[invalid-argument-type, not-subscriptable]
 
     def forward(self, batch):
         doc_embeddings = []

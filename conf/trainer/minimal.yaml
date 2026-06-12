@@ -1,0 +1,3 @@
+limit_train_batches: 2
+limit_val_batches: 1
+max_epochs: 1

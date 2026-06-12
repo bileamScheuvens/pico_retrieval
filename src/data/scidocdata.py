@@ -73,8 +73,8 @@ class SciDocDatamodule(L.LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_data, batch_size=self.batch_size, num_workers=4, shuffle=True
+            self.train_data, batch_size=self.batch_size, num_workers=0, shuffle=True
         )
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.val_data, batch_size=self.batch_size, num_workers=0)

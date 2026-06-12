@@ -22,22 +22,23 @@ cs.store(group="data", name="base_data", node=SciDocDataConfig)
 
 @dataclass
 class TrainerConfig:
-    precision: str
-    val_check_interval: int
-    log_every_n_steps: int
-    limit_val_batches: int
+    precision: str | None
+    val_check_interval: int | None
+    log_every_n_steps: int | None
+    limit_val_batches: int | None
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
 
 
 @dataclass
-class WandbConfig:
+class LoggerConfig:
     project: str
-    mode: str
+    mode: str | None
+    space_id: str | None
 
 
-cs.store(group="wandb", name="base_wandb", node=WandbConfig)
+cs.store(group="logger", name="base_logger", node=LoggerConfig)
 
 
 class TextEmbedType(Enum):
@@ -91,7 +92,7 @@ class ExperimentConfig:
     model: ARTSYConfig
     data: SciDocDataConfig
     trainer: TrainerConfig
-    wandb: WandbConfig
+    logger: LoggerConfig
 
 
 # register to hydra

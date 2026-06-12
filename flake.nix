@@ -2,7 +2,7 @@
   description = "Devenv.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/7616097cfbc4afdb497723a4c843f6a0ff689ea5";
   };
   outputs =
     { self, nixpkgs }:
@@ -11,28 +11,19 @@
       pkgs = import nixpkgs {
         system = system;
         config.allowUnfree = true;
-        config.allowBroken = true;
+        # config.allowBroken = true;
+        config.cudaSupport = true;
       };
       python = pkgs.python3.override {
         packageOverrides = new: old: {
-          torch = pkgs.python3Packages.torchWithCuda;
           umap-learn = old.umap-learn.overridePythonAttrs (oldAttrs: {
             doCheck = false;
           });
           biopython = old.biopython.overridePythonAttrs (oldAttrs: {
             doCheck = false;
           });
-          pynndescent = old.pynndescent.overridePythonAttrs (oldAttrs: {
+          onnxscript = old.onnxscript.overridePythonAttrs (oldAttrs: {
             doCheck = false;
-          });
-          huggingface-hub = pkgs.python3Packages.huggingface-hub_0;
-          transformers = old.transformers_4.overridePythonAttrs (old: {
-            dependencies = map (
-              p: if p.pname == "huggingface-hub" then new.huggingface-hub else p
-            ) old.dependencies;
-          });
-          diffusers = old.diffusers.overridePythonAttrs (oldAttrs: {
-            dependencies = oldAttrs.dependencies ++ [ old.httpx ];
           });
         };
       };
@@ -45,8 +36,12 @@
               joblib
               hydra-core
               omegaconf
+              onnxscript
+              onnxruntime
               biopython
+              ipdb
               plotly
+              kaleido
               lightning
               matplotlib
               networkx
@@ -60,25 +55,70 @@
               transformers
               umap-learn
               wandb
+              pudb
+
               (buildPythonPackage rec {
-                pname = "adapters";
-                version = "1.3.0";
-                format = "setuptools";
+                pname = "trackio";
+                version = "0.26.0";
+                pyproject = true;
 
                 src = fetchFromGitHub {
-                  owner = "adapter-hub";
-                  repo = "adapters";
-                  tag = "v1.3.0";
-                  hash = "sha256-1i/0cMhFM5acKwRoAKIOVZaaikJov9C+abDiiW/ZUL0=";
+                  owner = "gradio-app";
+                  repo = "trackio";
+                  tag = "trackio@${version}";
+                  hash = "sha256-d2eWN+7lAlcnQwc5RVZvFlYv2CDhEPXZ329al5Rg44g=";
                 };
 
+                npmDeps = fetchNpmDeps {
+                  src = "${src}/trackio/frontend";
+                  hash = "sha256-q1XMYwmQOULuReHnMdeRT4xzd4WOVsll6xdzv2UMgI8=";
+                };
+                env.SKIP_FRONTEND_BUILD = "1";
+                nativeBuildInputs = [
+                  nodejs
+                  npmHooks.npmConfigHook
+                  npmHooks.npmBuildHook
+                ];
+                npmRoot = "trackio/frontend";
+
                 build-system = [
-                  setuptools
+                  hatchling
                 ];
+
                 dependencies = [
-                  torch
-                  transformers
+                  gradio-client
+                  huggingface-hub
+                  numpy
+                  orjson
+                  pillow
+                  python-multipart
+                  starlette
+                  tomli
+                  uvicorn
                 ];
+
+                optional-dependencies = {
+                  apple-gpu = [
+                    psutil
+                  ];
+                  dev = [
+                    playwright
+                    pytest
+                    pytest-playwright
+                    ruff
+                  ];
+                  gpu = [
+                    nvidia-ml-py
+                    psutil
+                  ];
+                  mcp = [
+                    mcp
+                  ];
+                  spaces = [
+                    pyarrow
+                  ];
+                };
+
               })
               (buildPythonPackage rec {
                 pname = "NERDA";
@@ -86,10 +126,10 @@
                 format = "pyproject";
 
                 src = fetchFromGitHub {
-                  owner = "ebanalyse";
+                  owner = "bileamScheuvens";
                   repo = "NERDA";
-                  rev = "ae45d7e5368059721d1073384201433ea7a6e820";
-                  hash = "sha256-EAjxUmqXcSgfKp1E4zeuKGcewSvJuNIjrUv87O/EKVU=";
+                  tag = "fix-match_kwargs";
+                  hash = "sha256-n/xPE26AhA4eFPiCiRUShRvQEOutQJ+MtONUxKA6ngs=";
                 };
 
                 build-system = [

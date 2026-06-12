@@ -1,9 +1,11 @@
+from PIL import Image
+import io
 import wandb
 from collections import defaultdict
 from src.utils.configs import ARTSYConfig
 import torch
 from src.metrics import mean_l2, mean_sim
-from src.metrics.plots import plot_means_plotly
+from src.metrics.plots import plot_means
 from src.models.combiners import get_fitting_combiner
 from src.losses import get_fitting_criterion
 from src.models.specter2 import SPECTER2Model
@@ -38,7 +40,7 @@ class ARTSY(L.LightningModule):
         texts = []
         pico_agg = defaultdict(list)
         for title, abstract in zip(*batch):
-            text = title + self.paper_embedder.tokenizer.sep_token + abstract
+            text = title + self.paper_embedder.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
             texts.append(text)
             pico_individual_embeddings = self.pico_embedder(
                 text
@@ -122,12 +124,10 @@ class ARTSY(L.LightningModule):
         return metrics["val/loss"]
 
     def on_validation_end(self):
-        self.logger.experiment.log(  # ty:ignore[unresolved-attribute]
-            {
-                "mean_umap": plot_means_plotly(
-                    torch.cat(self.umap_buffer["pico_means"]),
-                    torch.cat(self.umap_buffer["paper_means"]),
-                    paper_titles=self.umap_buffer["titles"],
-                )
-            }
+        fig = plot_means(
+            torch.cat(self.umap_buffer["pico_means"]),
+            torch.cat(self.umap_buffer["paper_means"]),
+            paper_titles=self.umap_buffer["titles"],
         )
+        # fig_img = Image.open(io.BytesIO(fig.to_image(format="png")))
+        self.logger.experiment.log({"mean_umap": fig})  # ty:ignore[unresolved-attribute]

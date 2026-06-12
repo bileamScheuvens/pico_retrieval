@@ -1,7 +1,7 @@
-from src.models.text_embedders import SentenceTransformerModel
+from src.models.text_embedders import SentenceTransformerModel, PromptRepsModel
 from torch import nn
 from src.models import PicoExtractor
-from src.utils.configs import PubMedPicoConfig
+from src.utils.configs import PubMedPicoConfig, TextEmbedType
 from collections import defaultdict
 
 import torch
@@ -69,7 +69,10 @@ class PubMedPicoModel(PicoExtractor):
         self.extract_pico = self.memory.cache(_extract_pico)
 
         # get point embeddings from pico
-        self.text_encoder = SentenceTransformerModel(cfg.text_embedder_url)
+        if cfg.text_embed_type == TextEmbedType.SENTENCE:
+            self.text_encoder = SentenceTransformerModel(cfg.text_embedder_url)
+        elif cfg.text_embed_type == TextEmbedType.PROMPTREPS:
+            self.text_encoder = PromptRepsModel(cfg.text_embedder_url)
 
         if cfg.use_prob_encoder:
             # turn point embeddings to gaussian
