@@ -27,4 +27,5 @@ nvidia-smi # only if you requested gpus
 
 # Compute Phase
 cd "$SLURM_SUBMIT_DIR"
+source .venv/bin/activate
 srun python -m src.main

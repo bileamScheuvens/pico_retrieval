@@ -56,6 +56,7 @@
               umap-learn
               wandb
               pudb
+              pip
 
               (buildPythonPackage rec {
                 pname = "trackio";
