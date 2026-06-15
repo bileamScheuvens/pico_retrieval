@@ -57,6 +57,7 @@
               wandb
               pudb
               pip
+              pip-tools
 
               (buildPythonPackage rec {
                 pname = "trackio";

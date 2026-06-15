@@ -16,7 +16,8 @@ requirements.txt /workspace/requirements.txt
     python3 -m venv /venv
     . /venv/bin/activate
 
-    pip install --no-cache-dir -r /workspace/requirements.txt
+    pip install git+https://github.com/bileamScheuvens/NERDA.git@fix-match_kwargs
+    pip install joblib hydra-core omegaconf onnxscript onnxruntime biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb 
 
     # cleanup
     apt-get clean
