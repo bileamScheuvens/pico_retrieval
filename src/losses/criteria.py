@@ -74,7 +74,7 @@ class InfoNCERetrievalLoss(L.LightningModule):
         loss = F.cross_entropy(scores / self.temperature, labels, reduction=reduction)
         if recall:
             preds = scores.argmax(dim=1)
-            recall = (preds == labels).mean()
+            recall = (preds == labels).float().mean()
             return loss, recall
         return loss
 

@@ -1,6 +1,3 @@
-from PIL import Image
-import io
-import wandb
 from collections import defaultdict
 from src.utils.configs import ARTSYConfig
 import torch
@@ -46,18 +43,22 @@ class ARTSY(L.LightningModule):
                 text
             )  # [num_pico_elements, shared_dim]
             self.pico_combiner(pico_individual_embeddings, agg=pico_agg)
-        paper_means, paper_variances = self.paper_embedder(texts)
 
         preds = {
-            "paper_means": paper_means,
             "pico_means": torch.stack(pico_agg["mean"]),
         }
+
+        if self.paper_embed_type == "prob":
+            paper_means, paper_variances = self.paper_embedder(texts)
+            preds["paper_means"] = paper_means
+            preds["paper_variances"] = paper_variances
+        else:
+            preds["paper_means"] = self.paper_embedder(texts)
+
         if self.pico_embed_type == "prob":
             preds["pico_variances"] = torch.stack(pico_agg["variance"])
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
-        if self.pico_embed_type == "prob":
-            preds["paper_variances"] = paper_variances
         return preds
 
     def _compute_loss(
@@ -79,15 +80,16 @@ class ARTSY(L.LightningModule):
             target_z=None,
             recall=True,
         )
-        if pico_variances is not None:
-            l2_loss = self.cfg.l2_lambda * (pico_variances**2).sum()
-        loss = retrieval_loss + l2_loss
+        loss = retrieval_loss
         metrics = {
-            f"{prefix}/loss": loss,
             f"{prefix}/retrieval_loss": retrieval_loss,
-            f"{prefix}/l2_loss": l2_loss,
             f"{prefix}/recall": recall,
         }
+        if pico_variances is not None:
+            l2_loss = self.cfg.l2_lambda * (pico_variances**2).sum()
+            metrics[f"{prefix}/l2_loss"] = l2_loss
+            loss += l2_loss
+        metrics[f"{prefix}/loss"] = loss
         return metrics
 
     def training_step(self, batch, batch_idx):

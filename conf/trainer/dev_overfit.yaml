@@ -1,0 +1,6 @@
+defaults:
+  - default
+
+val_check_interval: null
+log_every_n_steps: 1
+overfit_batches: 2

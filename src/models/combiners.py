@@ -13,8 +13,11 @@ class LinearCombiner(L.LightningModule):
     def __init__(self):
         super().__init__()
 
-    def forward(self, embeddings):
-        raise NotImplementedError
+    def forward(self, embeddings, agg=None):
+        mean = torch.stack(embeddings).sum(dim=0)
+        if agg is not None:
+            agg["mean"].append(mean)
+        return mean
 
 
 class MpcCombiner(L.LightningModule):

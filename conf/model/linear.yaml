@@ -1,0 +1,5 @@
+defaults:
+  - default
+  - override pico_extractor: linear
+  - override paper_embedder: linear
+  - _self_

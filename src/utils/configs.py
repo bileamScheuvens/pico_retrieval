@@ -1,8 +1,8 @@
+from typing import Optional
 from omegaconf import OmegaConf
 from enum import Enum
 from dataclasses import dataclass
 from hydra.core.config_store import ConfigStore
-import lightning as L
 
 cs = ConfigStore()
 
@@ -22,10 +22,12 @@ cs.store(group="data", name="base_data", node=SciDocDataConfig)
 
 @dataclass
 class TrainerConfig:
-    precision: str | None
-    val_check_interval: int | None
-    log_every_n_steps: int | None
-    limit_val_batches: int | None
+    precision: Optional[str] | None = None
+    val_check_interval: Optional[int] = None
+    log_every_n_steps: Optional[int] = None
+    limit_train_batches: Optional[int] = None
+    limit_val_batches: Optional[int] = None
+    overfit_batches: Optional[int] = None
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
@@ -34,8 +36,8 @@ cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
 @dataclass
 class LoggerConfig:
     project: str
-    mode: str | None
-    space_id: str | None
+    mode: Optional[str] | None = None
+    space_id: Optional[str] | None = None
 
 
 cs.store(group="logger", name="base_logger", node=LoggerConfig)
@@ -61,6 +63,7 @@ class PubMedPicoConfig:
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
 
 
+# TODO rename these more abstractly
 @dataclass
 class SPECTER2Config:
     adapter: str
