@@ -27,7 +27,7 @@ class TrainerConfig:
     log_every_n_steps: Optional[int] = None
     limit_train_batches: Optional[int] = None
     limit_val_batches: Optional[int] = None
-    overfit_batches: Optional[int] = None
+    overfit_batches: int = 0
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
