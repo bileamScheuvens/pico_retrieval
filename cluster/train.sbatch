@@ -27,5 +27,4 @@ nvidia-smi # only if you requested gpus
 
 # Compute Phase
 cd "$SLURM_SUBMIT_DIR"
-source .venv/bin/activate
-srun python -m src.main
+singularity exec --nv --env-file .env --bind $SLURM_SUBMIT_DIR:/workspace cluster/container.sif /bin/bash -c ". /venv/bin/activate && cd /workspace && python3 -m src.main"

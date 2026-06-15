@@ -2,7 +2,7 @@
   description = "Devenv.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/7616097cfbc4afdb497723a4c843f6a0ff689ea5";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
   outputs =
     { self, nixpkgs }:
@@ -129,7 +129,7 @@
                 src = fetchFromGitHub {
                   owner = "bileamScheuvens";
                   repo = "NERDA";
-                  tag = "fix-match_kwargs";
+                  rev = "13a398c821feee614c1581050c8872486d5a0be4";
                   hash = "sha256-n/xPE26AhA4eFPiCiRUShRvQEOutQJ+MtONUxKA6ngs=";
                 };
 
