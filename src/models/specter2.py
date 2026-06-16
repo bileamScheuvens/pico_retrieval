@@ -19,7 +19,8 @@ class SPECTER2Model(PaperEmbedder):
 
         # load base model and freeze
         self.specter2_session = ort.InferenceSession(
-            MODELPATH / f"specter2_{cfg.adapter}.onnx"
+            MODELPATH / f"specter2_{cfg.adapter}.onnx",
+            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
         )
         self.specter_out_dim = self.specter2_session.get_outputs()[0].shape[-1]
 
@@ -44,9 +45,9 @@ class SPECTER2Model(PaperEmbedder):
             return "prob"
         return "point"
 
-    def embed_paper(self, paper):
+    def embed_batch(self, batch):
         inputs = self.tokenizer(
-            paper,
+            batch,
             padding=True,
             truncation=True,
             return_tensors="np",
@@ -56,12 +57,9 @@ class SPECTER2Model(PaperEmbedder):
 
         output = self.specter2_session.run(["last_hidden_state"], inputs)[0]
 
-        # take the first token in the batch as the embedding
-        return torch.tensor(output[:, 0, :])  # ty:ignore[invalid-argument-type, not-subscriptable]
+        # take the first token as the embedding
+        return torch.tensor(output[:, 0, :], device=self.device)  # ty:ignore[invalid-argument-type, not-subscriptable]
 
     def forward(self, batch):
-        doc_embeddings = []
-        for doc in batch:
-            doc_embeddings.append(self.embed_paper(doc).to(self.device))
-
-        return self.paper_head(torch.cat(doc_embeddings))  # [B, shared_dim]
+        doc_embeddings = self.embed_batch(batch)
+        return self.paper_head(doc_embeddings)  # [B, shared_dim]

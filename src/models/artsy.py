@@ -1,13 +1,16 @@
 from collections import defaultdict
-from src.utils.configs import ARTSYConfig
+from time import time
+
+import lightning as L
 import torch
+
+from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
 from src.models.combiners import get_fitting_combiner
-from src.losses import get_fitting_criterion
-from src.models.specter2 import SPECTER2Model
 from src.models.pubmed_pico import PubMedPicoModel
-import lightning as L
+from src.models.specter2 import SPECTER2Model
+from src.utils.configs import ARTSYConfig
 
 
 class ARTSY(L.LightningModule):
@@ -33,6 +36,7 @@ class ARTSY(L.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.cfg.lr)
 
     def forward(self, batch):
+        start = time()
         # TODO support batching better
         texts = []
         pico_agg = defaultdict(list)
@@ -47,7 +51,9 @@ class ARTSY(L.LightningModule):
         preds = {
             "pico_means": torch.stack(pico_agg["mean"]),
         }
+        print(f"pico embed time: {time() - start}")
 
+        mid = time()
         if self.paper_embed_type == "prob":
             paper_means, paper_variances = self.paper_embedder(texts)
             preds["paper_means"] = paper_means
@@ -59,6 +65,8 @@ class ARTSY(L.LightningModule):
             preds["pico_variances"] = torch.stack(pico_agg["variance"])
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
+        print(f"doc embed time: {time() - mid}")
+        print(f"total forward time: {time() - start}")
         return preds
 
     def _compute_loss(
