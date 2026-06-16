@@ -1,13 +1,15 @@
 from collections import defaultdict
-from src.utils.configs import ARTSYConfig
+
+import lightning as L
 import torch
+
+from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
 from src.models.combiners import get_fitting_combiner
-from src.losses import get_fitting_criterion
-from src.models.specter2 import SPECTER2Model
 from src.models.pubmed_pico import PubMedPicoModel
-import lightning as L
+from src.models.specter2 import SPECTER2Model
+from src.utils.configs import ARTSYConfig
 
 
 class ARTSY(L.LightningModule):

@@ -1,15 +1,16 @@
-from src.models.text_embedders import SentenceTransformerModel, PromptRepsModel
-from torch import nn
-from src.models import PicoExtractor
-from src.utils.configs import PubMedPicoConfig, TextEmbedType
 from collections import defaultdict
 
 import torch
 
 from joblib import Memory
 from seqeval.metrics.sequence_labeling import get_entities
+from torch import nn
 
+from src.constants import CACHEPATH, MODELPATH
+from src.models import PicoExtractor
 from src.models.prob_encoder import ProbabilisticEncoder
+from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
+from src.utils.configs import PubMedPicoConfig, TextEmbedType
 
 ## monkeypatch NERDA
 import transformers
@@ -25,8 +26,6 @@ def _unstrict_load(self, state_dict, strict=False, **kwargs):
 torch.nn.Module.load_state_dict = _unstrict_load  # ty:ignore[invalid-assignment]
 
 from NERDA.models import NERDA  # noqa: E402
-
-from src.constants import MODELPATH, CACHEPATH  # noqa: E402
 
 
 class PubMedPicoModel(PicoExtractor):
@@ -96,6 +95,7 @@ class PubMedPicoModel(PicoExtractor):
         return "point"
 
     def forward(self, text):
+
         PICO = self.extract_pico(text)
 
         pico_embeddings = []

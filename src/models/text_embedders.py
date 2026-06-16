@@ -74,4 +74,4 @@ class SentenceTransformerModel(L.LightningModule):
 
     @property
     def embed_dim(self):
-        return self.model.get_sentence_embedding_dimension()
+        return self.model.get_embedding_dimension()

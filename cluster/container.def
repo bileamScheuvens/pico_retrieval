@@ -1,5 +1,5 @@
 bootstrap: docker
-from: ubuntu:24.04
+from: nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04
 
 %files
 requirements.txt /workspace/requirements.txt
@@ -17,7 +17,7 @@ requirements.txt /workspace/requirements.txt
     . /venv/bin/activate
 
     pip install git+https://github.com/bileamScheuvens/NERDA.git@fix-match_kwargs
-    pip install joblib hydra-core omegaconf onnxscript onnxruntime biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb 
+    pip install joblib hydra-core omegaconf onnxscript onnxruntime-gpu biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb 
 
     # cleanup
     apt-get clean

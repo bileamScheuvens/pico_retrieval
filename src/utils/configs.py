@@ -23,7 +23,7 @@ cs.store(group="data", name="base_data", node=SciDocDataConfig)
 
 @dataclass
 class TrainerConfig:
-    precision: Optional[str] | None = None
+    precision: Optional[str] = None
     val_check_interval: Optional[int] = None
     log_every_n_steps: Optional[int] = None
     limit_train_batches: Optional[int] = None
@@ -37,8 +37,8 @@ cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
 @dataclass
 class LoggerConfig:
     project: str
-    mode: Optional[str] | None = None
-    space_id: Optional[str] | None = None
+    mode: Optional[str] = None
+    space_id: Optional[str] = None
 
 
 cs.store(group="logger", name="base_logger", node=LoggerConfig)
