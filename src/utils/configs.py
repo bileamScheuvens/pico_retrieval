@@ -1,4 +1,5 @@
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 from omegaconf import OmegaConf
 from enum import Enum
 from dataclasses import dataclass
@@ -84,6 +85,7 @@ class ARTSYConfig:
     paper_embedder: SPECTER2Config
     lr: float
     l2_lambda: float
+    ckpt_path: Optional[Union[str, Path]] = None
 
 
 cs.store(group="model", name="base_model", node=ARTSYConfig)
