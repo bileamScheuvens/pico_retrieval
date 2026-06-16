@@ -2,8 +2,6 @@ from collections import defaultdict
 
 import torch
 
-## monkeypatch NERDA
-import transformers
 from joblib import Memory
 from seqeval.metrics.sequence_labeling import get_entities
 from torch import nn
@@ -13,6 +11,9 @@ from src.models import PicoExtractor
 from src.models.prob_encoder import ProbabilisticEncoder
 from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
 from src.utils.configs import PubMedPicoConfig, TextEmbedType
+
+## monkeypatch NERDA
+import transformers
 
 transformers.AdamW = torch.optim.AdamW  # ty:ignore[unresolved-attribute]
 _strict_load = torch.nn.Module.load_state_dict
@@ -94,6 +95,7 @@ class PubMedPicoModel(PicoExtractor):
         return "point"
 
     def forward(self, text):
+
         PICO = self.extract_pico(text)
 
         pico_embeddings = []
