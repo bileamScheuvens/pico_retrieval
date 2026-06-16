@@ -174,7 +174,12 @@
 
             ]
           ))
-          cudatoolkit
+          cudaPackages.cuda_nvrtc.lib
+          cudaPackages.cuda_nvrtc
+          cudaPackages.cudnn
+          cudaPackages.libcublas
+          cudaPackages.libcufft
+          cudaPackages.libcurand
         ];
 
         shellHook = ''
@@ -195,6 +200,7 @@
               pkgs.cudatoolkit
             ]
           }:$LIBRARY_PATH
+          export LD_PRELOAD=${pkgs.cudaPackages.cuda_nvrtc.lib}/lib/libnvrtc.so.12:$LD_PRELOAD
         '';
       };
     };
