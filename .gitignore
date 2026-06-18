@@ -3,3 +3,6 @@ experiments/*
 wandb/
 !conf/wandb/
 outputs/
+*.ckpt
+.index/
+!.index/.gitkeep

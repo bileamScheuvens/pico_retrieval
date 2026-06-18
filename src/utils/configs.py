@@ -59,6 +59,7 @@ class PubMedPicoConfig:
     text_embedder_url: str
     use_prob_encoder: bool
     considered_elements: list[str]
+    cache_extraction: bool = False
 
 
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
@@ -92,6 +93,16 @@ cs.store(group="model", name="base_model", node=ARTSYConfig)
 
 
 @dataclass
+class EvalConfig:
+    model: ARTSYConfig
+    data: SciDocDataConfig
+    index_name: str = "index"
+
+
+cs.store(name="base_eval", node=EvalConfig)
+
+
+@dataclass
 class ExperimentConfig:
     experiment_name: str
     model: ARTSYConfig
@@ -100,7 +111,6 @@ class ExperimentConfig:
     logger: LoggerConfig
 
 
-# register to hydra
 cs.store(name="experiment_config", node=ExperimentConfig)
 
 

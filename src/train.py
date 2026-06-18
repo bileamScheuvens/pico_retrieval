@@ -33,15 +33,23 @@ def train_artsy(cfg: ExperimentConfig):
 
     model = ARTSY(cfg.model)
     datamodule = SciDocDatamodule(cfg.data)
+    # early stopping only once after 1000 batches
+    patience = (
+        int(1000 / cfg.trainer.val_check_interval)
+        if cfg.trainer.val_check_interval
+        else 2
+    )
     trainer = L.Trainer(
         **as_dict(cfg.trainer),
         logger=WandbLogger(save_dir=EXPERIMENT_DIR, experiment=run),
         default_root_dir=EXPERIMENT_DIR,
         callbacks=[
             ModelCheckpoint(
-                dirpath=EXPERIMENT_DIR / "checkpoints", every_n_train_steps=1000
+                dirpath=EXPERIMENT_DIR / "checkpoints",
+                every_n_train_steps=1000,
+                save_on_exception=True,
             ),
-            EarlyStopping("val/loss"),
+            EarlyStopping("val/loss", patience=patience),
             TQDMProgressBar(),
         ],
     )

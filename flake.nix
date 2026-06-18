@@ -52,12 +52,78 @@
               sentence-transformers
               seqeval
               torch-geometric
+              faiss
               transformers
               umap-learn
               wandb
               pudb
               pip
               pip-tools
+              (buildPythonPackage (finalAttrs: {
+                pname = "ranx";
+                version = "v0.3.21";
+                pyproject = true;
+                __structuredAttrs = true;
+
+                src = fetchFromGitHub {
+                  owner = "AmenRa";
+                  repo = "ranx";
+                  rev = "7363db0c35e92e90d6fa6fe73907b760678f765e";
+                  hash = "sha256-qln64FiYmR/tuS9pzuJZQQGG6VKAdL7nOq/xfgdikmo=";
+                };
+
+                build-system = [
+                  setuptools
+                ];
+
+                dependencies = [
+                  cbor2
+                  fastparquet
+                  (buildPythonPackage (finalAttrs: {
+                    pname = "ir-datasets";
+                    version = "0.5.11";
+                    pyproject = true;
+                    __structuredAttrs = true;
+                    dontCheckRuntimeDeps = true;
+
+                    src = fetchFromGitHub {
+                      owner = "allenai";
+                      repo = "ir_datasets";
+                      tag = "v${finalAttrs.version}";
+                      hash = "sha256-9RNTs6WiwmFc7LG2LGZuRxUMLHw2RePELCZx/7IF5cQ=";
+                    };
+
+                    build-system = [
+                      setuptools
+                      wheel
+                    ];
+
+                    dependencies = [
+                      beautifulsoup4
+                      ijson
+                      inscriptis
+                      lxml
+                      lz4
+                      numpy
+                      pyarrow
+                      pyyaml
+                      requests
+                      tqdm
+                    ];
+                  }))
+                  lz4
+                  numba
+                  numpy
+                  orjson
+                  pandas
+                  rich
+                  scipy
+                  seaborn
+                  tabulate
+                  tqdm
+                ];
+
+              }))
 
               (buildPythonPackage rec {
                 pname = "trackio";

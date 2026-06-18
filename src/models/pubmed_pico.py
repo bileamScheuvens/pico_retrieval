@@ -64,8 +64,11 @@ class PubMedPicoModel(PicoExtractor):
             return PICO
 
         # cache extractions
-        self.memory = Memory(CACHEPATH, verbose=0)
-        self.extract_pico = self.memory.cache(_extract_pico)
+        if cfg.cache_extraction:
+            self.memory = Memory(CACHEPATH, verbose=0)
+            self.extract_pico = self.memory.cache(_extract_pico)
+        else:
+            self.extract_pico = _extract_pico
 
         # get point embeddings from pico
         if cfg.text_embed_type == TextEmbedType.SENTENCE:
@@ -95,9 +98,10 @@ class PubMedPicoModel(PicoExtractor):
         return "point"
 
     def forward(self, text):
-
         PICO = self.extract_pico(text)
+        return self.encode_pico(PICO)
 
+    def encode_pico(self, PICO):
         pico_embeddings = []
         # TODO introduce max number of elements and pad for batching?
         for pico_type in ["Patient", "Intervention", "Control", "Outcome"]:

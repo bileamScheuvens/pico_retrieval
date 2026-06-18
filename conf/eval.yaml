@@ -1,0 +1,12 @@
+defaults:
+  - model: base_eval
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+index_name: eval
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

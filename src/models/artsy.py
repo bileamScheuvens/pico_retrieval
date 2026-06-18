@@ -19,6 +19,7 @@ class ARTSY(L.LightningModule):
         super().__init__()
         self.cfg = cfg
         self.pico_embedder = PubMedPicoModel(cfg.pico_extractor)
+        self.extract_pico = self.pico_embedder.extract_pico
         self.pico_embed_type = self.pico_embedder.embed_type
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
@@ -34,17 +35,23 @@ class ARTSY(L.LightningModule):
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.cfg.lr)
 
+    def join_text(self, title, abstract):
+        return title + self.paper_embedder.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
+
+    @torch.no_grad
+    def embed_query(self, pico):
+        pico_individual = self.pico_embedder.encode_pico(pico)
+        return self.pico_combiner(pico_individual).unsqueeze(0).numpy()
+
     def forward(self, batch):
         # TODO support batching better
         texts = []
         pico_agg = defaultdict(list)
         for title, abstract in zip(*batch):
-            text = title + self.paper_embedder.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
+            text = self.join_text(title, abstract)
             texts.append(text)
-            pico_individual_embeddings = self.pico_embedder(
-                text
-            )  # [num_pico_elements, shared_dim]
-            self.pico_combiner(pico_individual_embeddings, agg=pico_agg)
+            pico_individual = self.pico_embedder(text)  # [n_pico_elements, shared_dim]
+            self.pico_combiner(pico_individual, agg=pico_agg)
 
         preds = {
             "pico_means": torch.stack(pico_agg["mean"]),
