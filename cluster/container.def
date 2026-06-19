@@ -1,0 +1,32 @@
+bootstrap: docker
+from: nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04
+
+%files
+requirements.txt /workspace/requirements.txt
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    echo "deb http://archive.ubuntu.com/ubuntu noble universe" >> /etc/apt/sources.list
+    apt-get update
+
+    apt-get install -y python3-dev python3-pip python3-full swig git
+
+    python3 -m venv /venv
+    . /venv/bin/activate
+
+    pip install git+https://github.com/bileamScheuvens/NERDA.git@fix-match_kwargs
+    pip install joblib hydra-core omegaconf onnxscript onnxruntime-gpu biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb 
+
+    # cleanup
+    apt-get clean
+    pip cache purge
+
+
+%runscript
+    . /venv/bin/activate
+    exec bash -c "$*"
+
+
+

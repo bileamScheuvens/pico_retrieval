@@ -4,4 +4,3 @@ precision: "16-mixed"
 log_every_n_steps: 5
 val_check_interval: 150
 limit_val_batches: 15
-overfit_batches: null

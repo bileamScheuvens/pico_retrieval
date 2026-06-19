@@ -2,7 +2,7 @@
   description = "Devenv.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/7616097cfbc4afdb497723a4c843f6a0ff689ea5";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
   outputs =
     { self, nixpkgs }:
@@ -52,10 +52,78 @@
               sentence-transformers
               seqeval
               torch-geometric
+              faiss
               transformers
               umap-learn
               wandb
               pudb
+              pip
+              pip-tools
+              (buildPythonPackage (finalAttrs: {
+                pname = "ranx";
+                version = "v0.3.21";
+                pyproject = true;
+                __structuredAttrs = true;
+
+                src = fetchFromGitHub {
+                  owner = "AmenRa";
+                  repo = "ranx";
+                  rev = "7363db0c35e92e90d6fa6fe73907b760678f765e";
+                  hash = "sha256-qln64FiYmR/tuS9pzuJZQQGG6VKAdL7nOq/xfgdikmo=";
+                };
+
+                build-system = [
+                  setuptools
+                ];
+
+                dependencies = [
+                  cbor2
+                  fastparquet
+                  (buildPythonPackage (finalAttrs: {
+                    pname = "ir-datasets";
+                    version = "0.5.11";
+                    pyproject = true;
+                    __structuredAttrs = true;
+                    dontCheckRuntimeDeps = true;
+
+                    src = fetchFromGitHub {
+                      owner = "allenai";
+                      repo = "ir_datasets";
+                      tag = "v${finalAttrs.version}";
+                      hash = "sha256-9RNTs6WiwmFc7LG2LGZuRxUMLHw2RePELCZx/7IF5cQ=";
+                    };
+
+                    build-system = [
+                      setuptools
+                      wheel
+                    ];
+
+                    dependencies = [
+                      beautifulsoup4
+                      ijson
+                      inscriptis
+                      lxml
+                      lz4
+                      numpy
+                      pyarrow
+                      pyyaml
+                      requests
+                      tqdm
+                    ];
+                  }))
+                  lz4
+                  numba
+                  numpy
+                  orjson
+                  pandas
+                  rich
+                  scipy
+                  seaborn
+                  tabulate
+                  tqdm
+                ];
+
+              }))
 
               (buildPythonPackage rec {
                 pname = "trackio";
@@ -128,7 +196,7 @@
                 src = fetchFromGitHub {
                   owner = "bileamScheuvens";
                   repo = "NERDA";
-                  tag = "fix-match_kwargs";
+                  rev = "13a398c821feee614c1581050c8872486d5a0be4";
                   hash = "sha256-n/xPE26AhA4eFPiCiRUShRvQEOutQJ+MtONUxKA6ngs=";
                 };
 
@@ -172,7 +240,12 @@
 
             ]
           ))
-          cudatoolkit
+          cudaPackages.cuda_nvrtc.lib
+          cudaPackages.cuda_nvrtc
+          cudaPackages.cudnn
+          cudaPackages.libcublas
+          cudaPackages.libcufft
+          cudaPackages.libcurand
         ];
 
         shellHook = ''
@@ -193,6 +266,7 @@
               pkgs.cudatoolkit
             ]
           }:$LIBRARY_PATH
+          export LD_PRELOAD=${pkgs.cudaPackages.cuda_nvrtc.lib}/lib/libnvrtc.so.12:$LD_PRELOAD
         '';
       };
     };

@@ -1,4 +1,5 @@
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 from omegaconf import OmegaConf
 from enum import Enum
 from dataclasses import dataclass
@@ -22,12 +23,12 @@ cs.store(group="data", name="base_data", node=SciDocDataConfig)
 
 @dataclass
 class TrainerConfig:
-    precision: Optional[str] | None = None
+    precision: Optional[str] = None
     val_check_interval: Optional[int] = None
     log_every_n_steps: Optional[int] = None
     limit_train_batches: Optional[int] = None
     limit_val_batches: Optional[int] = None
-    overfit_batches: Optional[int] = None
+    overfit_batches: int = 0
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
@@ -36,8 +37,8 @@ cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
 @dataclass
 class LoggerConfig:
     project: str
-    mode: Optional[str] | None = None
-    space_id: Optional[str] | None = None
+    mode: Optional[str] = None
+    space_id: Optional[str] = None
 
 
 cs.store(group="logger", name="base_logger", node=LoggerConfig)
@@ -58,6 +59,7 @@ class PubMedPicoConfig:
     text_embedder_url: str
     use_prob_encoder: bool
     considered_elements: list[str]
+    cache_extraction: bool = False
 
 
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
@@ -84,9 +86,20 @@ class ARTSYConfig:
     paper_embedder: SPECTER2Config
     lr: float
     l2_lambda: float
+    ckpt_path: Optional[Union[str, Path]] = None
 
 
 cs.store(group="model", name="base_model", node=ARTSYConfig)
+
+
+@dataclass
+class EvalConfig:
+    model: ARTSYConfig
+    data: SciDocDataConfig
+    index_name: str = "index"
+
+
+cs.store(name="base_eval", node=EvalConfig)
 
 
 @dataclass
@@ -98,7 +111,6 @@ class ExperimentConfig:
     logger: LoggerConfig
 
 
-# register to hydra
 cs.store(name="experiment_config", node=ExperimentConfig)
 
 

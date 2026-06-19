@@ -3,11 +3,10 @@ import os
 import lightning as L
 
 import wandb
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, TQDMProgressBar
-from lightning.pytorch.profilers import (
-    PyTorchProfiler,
-    SimpleProfiler,
-    AdvancedProfiler,
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    ModelCheckpoint,
+    TQDMProgressBar,
 )
 
 
@@ -15,7 +14,6 @@ from src.constants import ROOT
 from src.data.scidocdata import SciDocDatamodule
 
 from lightning.pytorch.loggers import WandbLogger
-from src.metrics.trackiologger import TrackioLogger
 from src.models.artsy import ARTSY
 from src.utils.configs import ExperimentConfig, as_dict
 
@@ -35,19 +33,26 @@ def train_artsy(cfg: ExperimentConfig):
 
     model = ARTSY(cfg.model)
     datamodule = SciDocDatamodule(cfg.data)
+    # early stopping only once after 1000 batches
+    patience = (
+        int(1000 / cfg.trainer.val_check_interval)
+        if cfg.trainer.val_check_interval
+        else 2
+    )
     trainer = L.Trainer(
         **as_dict(cfg.trainer),
         logger=WandbLogger(save_dir=EXPERIMENT_DIR, experiment=run),
         default_root_dir=EXPERIMENT_DIR,
-        # profiler=AdvancedProfiler(dirpath=EXPERIMENT_DIR, filename="profile"),
         callbacks=[
             ModelCheckpoint(
-                dirpath=EXPERIMENT_DIR / "checkpoints", every_n_train_steps=1000
+                dirpath=EXPERIMENT_DIR / "checkpoints",
+                every_n_train_steps=1000,
+                save_on_exception=True,
             ),
-            EarlyStopping("val/loss"),
+            EarlyStopping("val/loss", patience=patience),
             TQDMProgressBar(),
         ],
     )
 
     # train
-    trainer.fit(model, datamodule)
+    trainer.fit(model, datamodule, ckpt_path=cfg.model.ckpt_path, weights_only=False)
