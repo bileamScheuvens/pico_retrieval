@@ -23,9 +23,6 @@ class MpcRetrievalLoss(L.LightningModule):
         recall=False,
         **kwargs,
     ):
-        # TODO normalize in forward
-        query = F.normalize(query, dim=-1)
-        target = F.normalize(target, dim=-1)
         target_samples = sample_gaussian_tensors(target, target_logsigma, 7)
 
         inv_sigmas = torch.exp(-query_logsigma)

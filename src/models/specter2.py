@@ -1,12 +1,11 @@
 from src.constants import MODELPATH
-from torch import nn
 import torch
 
 import onnxruntime as ort
 from transformers import AutoTokenizer
 
 from src.models import PaperEmbedder
-from src.models.prob_encoder import ProbabilisticEncoder
+from src.models.model_heads import ProbabilisticEncoder, PointEncoder
 from src.utils.configs import SPECTER2Config
 
 
@@ -32,11 +31,10 @@ class SPECTER2Model(PaperEmbedder):
                 cfg.shared_dim,
             )
         else:
-            self.paper_head = nn.Sequential(
-                nn.Linear(self.specter_out_dim, cfg.hidden_dim),
-                nn.GELU(),
-                nn.LayerNorm(cfg.hidden_dim),
-                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
+            self.paper_head = PointEncoder(
+                self.specter_out_dim,
+                cfg.hidden_dim,
+                cfg.shared_dim,
             )
 
     @property

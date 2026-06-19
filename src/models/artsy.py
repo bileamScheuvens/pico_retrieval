@@ -1,3 +1,4 @@
+from src.models.combiners import Combiner
 from collections import defaultdict
 
 import lightning as L
@@ -6,7 +7,6 @@ import torch
 from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
-from src.models.combiners import get_fitting_combiner
 from src.models.pubmed_pico import PubMedPicoModel
 from src.models.specter2 import SPECTER2Model
 from src.utils.configs import ARTSYConfig
@@ -23,7 +23,7 @@ class ARTSY(L.LightningModule):
         self.pico_embed_type = self.pico_embedder.embed_type
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
-        self.pico_combiner = get_fitting_combiner(embed_type=self.pico_embed_type)
+        self.pico_combiner = Combiner(cfg.combiner)
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
             pico_extractor=self.pico_embedder,
@@ -51,12 +51,18 @@ class ARTSY(L.LightningModule):
     def forward(self, batch):
         # TODO support batching better
         texts = []
+        # aggregates combiner outputs (just mean or mean, var, log_z)
         pico_agg = defaultdict(list)
         for title, abstract in zip(*batch):
             text = self.join_text(title, abstract)
             texts.append(text)
-            pico_individual = self.pico_embedder(text)  # [n_pico_elements, shared_dim]
-            self.pico_combiner(pico_individual, agg=pico_agg)
+            pico_individual, pico_labels = self.pico_embedder(
+                text
+            )  # [n_pico_elements, shared_dim]
+
+            combined = self.pico_combiner(pico_individual, pico_labels)
+            for k, v in combined.items():
+                pico_agg[k].append(v)
 
         preds = {
             "pico_means": torch.stack(pico_agg["mean"]),

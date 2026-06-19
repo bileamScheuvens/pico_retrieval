@@ -1,0 +1,5 @@
+defaults:
+  - base_combiner
+
+inter_agg: MEAN
+intra_agg: HADAMARD

@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import torch
+import torch.nn.functional as F
 
 from joblib import Memory
 from seqeval.metrics.sequence_labeling import get_entities
@@ -8,7 +9,7 @@ from torch import nn
 
 from src.constants import CACHEPATH, MODELPATH
 from src.models import PicoExtractor
-from src.models.prob_encoder import ProbabilisticEncoder
+from src.models.model_heads import ProbabilisticEncoder
 from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
 from src.utils.configs import PubMedPicoConfig, TextEmbedType
 
@@ -97,19 +98,21 @@ class PubMedPicoModel(PicoExtractor):
             return "prob"
         return "point"
 
-    def forward(self, text):
+    def forward(self, text) -> tuple[list[torch.Tensor], list[str]]:
         PICO = self.extract_pico(text)
         return self.encode_pico(PICO)
 
-    def encode_pico(self, PICO):
+    def encode_pico(self, PICO) -> tuple[list[torch.Tensor], list[str]]:
         pico_embeddings = []
+        pico_labels = []
         # TODO introduce max number of elements and pad for batching?
         for pico_type in ["Patient", "Intervention", "Control", "Outcome"]:
             if pico_type not in self.cfg.considered_elements:
                 continue
-            elements = PICO[pico_type] or [""]
+            elements = PICO[pico_type] or ["[MISSING]"]
             for e in elements:
                 point_embed = self.text_encoder(f"{pico_type}: {e}")
                 final_embed = self.pico_head(point_embed)
+                pico_labels.append(pico_type)
                 pico_embeddings.append(final_embed)
-        return pico_embeddings
+        return pico_embeddings, pico_labels

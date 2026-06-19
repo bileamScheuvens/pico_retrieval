@@ -2,6 +2,7 @@ defaults:
   - base_model
   - pico_extractor: pubmed_pico
   - paper_embedder: specter2
+  - combiner: static
   - _self_
 
 lr: 5e-3

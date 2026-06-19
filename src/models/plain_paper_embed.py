@@ -6,7 +6,7 @@ import onnxruntime as ort
 from transformers import AutoTokenizer
 
 from src.models import PaperEmbedder
-from src.models.prob_encoder import ProbabilisticEncoder
+from src.models.model_heads import ProbabilisticEncoder
 from src.utils.configs import SPECTER2Config
 
 

@@ -79,11 +79,31 @@ class SPECTER2Config:
 cs.store(group="model/paper_embedder", name="base_specter2", node=SPECTER2Config)
 
 
+class PicoAggType(Enum):
+    MEAN = "mean"
+    SUM = "sum"
+    ATTN = "attention"
+    GAUSSIAN = "gaussian"
+    HADAMARD = "hadamard"
+    MLP = "mlp"
+
+
+@dataclass
+class PicoCombinerConfig:
+    intra_agg: PicoAggType
+    inter_agg: PicoAggType
+    n_heads: Optional[int] = 8
+
+
+cs.store(group="model/combiner", name="base_combiner", node=PicoCombinerConfig)
+
+
 @dataclass
 class ARTSYConfig:
     temperature: int
     pico_extractor: PubMedPicoConfig
     paper_embedder: SPECTER2Config
+    combiner: PicoCombinerConfig
     lr: float
     l2_lambda: float
     ckpt_path: Optional[Union[str, Path]] = None

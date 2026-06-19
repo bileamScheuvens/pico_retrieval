@@ -1,3 +1,4 @@
+from src.utils.configs import PicoCombinerConfig
 from abc import abstractmethod
 import lightning as L
 

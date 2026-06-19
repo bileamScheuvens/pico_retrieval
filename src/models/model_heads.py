@@ -1,4 +1,5 @@
 import lightning as L
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -15,4 +16,18 @@ class ProbabilisticEncoder(L.LightningModule):
     def forward(self, x):
         x = self.backbone(x)
         clamped_logsigma = self.logsigma_head(x).clamp(-self.clamp_val, self.clamp_val)
-        return self.mu_head(x), clamped_logsigma
+        return F.normalize(self.mu_head(x), dim=-1), clamped_logsigma
+
+
+class PointEncoder(L.LightningModule):
+    def __init__(self, in_dim, hidden_dim, shared_dim):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.GELU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, shared_dim),
+        )
+
+    def forward(self, x):
+        return F.normalize(self.model(x), dim=-1)
