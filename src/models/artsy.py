@@ -41,7 +41,12 @@ class ARTSY(L.LightningModule):
     @torch.no_grad
     def embed_query(self, pico):
         pico_individual = self.pico_embedder.encode_pico(pico)
-        return self.pico_combiner(pico_individual).unsqueeze(0).numpy()
+        return self.pico_combiner(pico_individual).unsqueeze(0).cpu().numpy()
+
+    @torch.no_grad()
+    def embed_paper(self, title, abstract):
+        paper_embed = self.paper_embedder(self.join_text(title, abstract))
+        return paper_embed.cpu().numpy()
 
     def forward(self, batch):
         # TODO support batching better

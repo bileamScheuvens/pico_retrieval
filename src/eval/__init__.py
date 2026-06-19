@@ -28,7 +28,6 @@ def build_index(model: ARTSY, index_name, clear=False):
         pmid_to_content[pmid] = (i, title, abstract)
         if i < index_size:
             continue
-        paper_embed = model.paper_embedder(model.join_text(title, abstract)).numpy()
-        index.add(paper_embed)  # ty:ignore[missing-argument]
+        index.add(model.embed_paper(title, abstract))  # ty:ignore[missing-argument]
     faiss.write_index(index, str(full_path))
     return index, idx_to_pmid, pmid_to_content

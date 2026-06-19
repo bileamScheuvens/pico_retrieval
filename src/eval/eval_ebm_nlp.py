@@ -1,6 +1,6 @@
-import torch
+import json
 from tqdm import tqdm
-from src.constants import CONFIGPATH
+from src.constants import CONFIGPATH, EVALPATH
 from src.eval import build_index
 import hydra
 import numpy as np
@@ -12,7 +12,6 @@ from src.models.artsy import ARTSY
 @hydra.main(version_base=None, config_path=str(CONFIGPATH), config_name="eval")
 def eval_ebm_nlp(cfg: DictConfig):
     # model = ARTSY(cfg.model)
-    breakpoint()
     model = ARTSY.load_from_checkpoint(cfg.model.ckpt_path, weights_only=False)
     index, idx_to_pmid, pmid_to_content = build_index(
         model, index_name=cfg.index_name, clear=False
@@ -25,7 +24,17 @@ def eval_ebm_nlp(cfg: DictConfig):
         # TODO do something with sim
         sim, ranks = index.search(pico_embed, index.ntotal)
         all_ranks.append(np.where(ranks == idx)[1])
+    all_ranks = np.array(all_ranks)
     breakpoint()
+    results = {
+        "mrr": np.mean(1 / (all_ranks + 1)).round(3),
+        "recall@1": np.mean(all_ranks < 1).round(2),
+        "recall@10": np.mean(all_ranks < 10).round(2),
+        "recall@100": np.mean(all_ranks < 100).round(2),
+        "recall@1000": np.mean(all_ranks < 1000).round(2),
+    }
+    with open(EVALPATH / f"{cfg.index_name}.json", "w") as f:
+        f.write(json.dumps(results))
 
     # pico = {
     #     "Patient": ["subjects without pxs"],
