@@ -106,9 +106,13 @@ class ARTSY(L.LightningModule):
             f"{prefix}/recall": recall,
         }
         if pico_variances is not None:
-            l2_loss = self.cfg.l2_lambda * (pico_variances**2).sum()
-            metrics[f"{prefix}/l2_loss"] = l2_loss
-            loss += l2_loss
+            l2_pico = self.cfg.l2_lambda * ((pico_variances) ** 2).mean()
+            metrics[f"{prefix}/l2_pico"] = l2_pico
+            loss += l2_pico
+        if paper_variances is not None:
+            l2_paper = self.cfg.l2_lambda * ((paper_variances) ** 2).mean()
+            metrics[f"{prefix}/l2_paper"] = l2_paper
+            loss += l2_paper
         metrics[f"{prefix}/loss"] = loss
         return metrics
 

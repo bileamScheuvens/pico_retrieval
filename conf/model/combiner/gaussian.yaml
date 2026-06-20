@@ -3,3 +3,4 @@ defaults:
 
 inter_agg: GAUSSIAN
 intra_agg: GAUSSIAN
+use_prob_encoder: true

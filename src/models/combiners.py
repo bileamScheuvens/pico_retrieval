@@ -1,10 +1,11 @@
-from torch.nn.functional import normalize
 from typing import Callable
-from src.utils.configs import PicoCombinerConfig
+
+import lightning as L
 import torch
 from torch.distributions import MultivariateNormal
-import lightning as L
-from src.utils.configs import PicoAggType
+from torch.nn.functional import normalize
+
+from src.utils.configs import PicoAggType, PicoCombinerConfig
 
 
 def AggFactory(agg_type: PicoAggType, cfg: PicoCombinerConfig) -> Callable:
@@ -29,15 +30,38 @@ class Combiner(L.LightningModule):
         super().__init__()
         self.cfg = cfg
         self.inter_combiner = AggFactory(cfg.inter_agg, cfg)
-        self.intra_combiner = AggFactory(cfg.inter_agg, cfg)
+        self.intra_combiner = AggFactory(cfg.intra_agg, cfg)
 
     def forward(self, embeds, labels):
+        if self.cfg.use_prob_encoder:
+            return self.forward_prob(embeds, labels)
+        else:
+            return self.forward_point(embeds, labels)
+
+    def forward_point(self, embeds, labels):
         # embeds shape: [n_elements, shared_dim]
         inter_embeds = []
         for label in set(labels):
             current_embeds = [e for (e, e_l) in zip(embeds, labels) if e_l == label]
             inter_embeds.append(self.inter_combiner(torch.stack(current_embeds)))
         return {"mean": self.intra_combiner(torch.stack(inter_embeds))}  # [shared_dim]
+
+    def forward_prob(self, embeds, labels):
+        # embeds shape: [n_elements, 2, shared_dim]
+        inter_embeds = []
+        log_z = torch.zeros(1).to(self.device)
+
+        for label in set(labels):
+            current_embeds = [
+                torch.stack(e) for (e, e_l) in zip(embeds, labels) if e_l == label
+            ]
+            inter_embed = self.inter_combiner(torch.stack(current_embeds))
+            inter_embeds.append(
+                torch.stack((inter_embed["mean"], inter_embed["variance"]))
+            )
+            log_z += inter_embed["log_z"].detach()
+        # stack all
+        return self.intra_combiner(inter_embeds, log_z=log_z)
 
 
 class HadamardCombiner(L.LightningModule):
@@ -57,18 +81,17 @@ class MpcCombiner(L.LightningModule):
         super().__init__()
         self.cfg = cfg
 
-    def forward(self, embeddings):
-        """Combine embeddings. Optionally takes aggregator instead of returning result."""
+    def forward(self, embeddings, log_z=torch.zeros(1)):
         if len(embeddings) == 1:
             combined = {
                 "mean": embeddings[0][0],
                 "variance": embeddings[0][1],
-                "log_z": torch.zeros(1).to(embeddings[0][0].device),
+                "log_z": log_z.to(self.device),
             }
         else:
             prior_mean = embeddings[0][0]
             prior_variance = embeddings[0][1]
-            log_z_total = 0
+            log_z_total = log_z.to(self.device)
             for i in range(1, len(embeddings)):
                 posterior_mean, posterior_variance, log_z = product_2_gaussians(
                     prior_mean,

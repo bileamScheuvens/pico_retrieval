@@ -93,6 +93,7 @@ class PicoCombinerConfig:
     intra_agg: PicoAggType
     inter_agg: PicoAggType
     n_heads: Optional[int] = 8
+    use_prob_encoder: bool = False
 
 
 cs.store(group="model/combiner", name="base_combiner", node=PicoCombinerConfig)
