@@ -98,18 +98,24 @@ class PubMedPicoModel(PicoExtractor):
             return "prob"
         return "point"
 
-    def forward(self, text) -> tuple[list[torch.Tensor], list[str]]:
+    def forward(
+        self,
+        text,
+    ) -> tuple[list[torch.Tensor], list[str]]:
         PICO = self.extract_pico(text)
         return self.encode_pico(PICO)
 
     def encode_pico(self, PICO) -> tuple[list[torch.Tensor], list[str]]:
+        pico_dropout_coeff = self.cfg.pico_dropout if self.training else 0.0
         pico_embeddings = []
         pico_labels = []
         # TODO introduce max number of elements and pad for batching?
         for pico_type in ["Patient", "Intervention", "Control", "Outcome"]:
             if pico_type not in self.cfg.considered_elements:
                 continue
-            elements = PICO[pico_type] or ["[MISSING]"]
+            elements = PICO[pico_type]
+            if not elements or (torch.rand(1) < pico_dropout_coeff):
+                elements = ["[MISSING]"]
             for e in elements:
                 point_embed = self.text_encoder(f"{pico_type}: {e}")
                 final_embed = self.pico_head(point_embed)

@@ -60,6 +60,7 @@ class PubMedPicoConfig:
     use_prob_encoder: bool
     considered_elements: list[str]
     cache_extraction: bool = False
+    pico_dropout: float = 0.0
 
 
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
