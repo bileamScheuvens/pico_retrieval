@@ -1,7 +1,7 @@
 import json
 from tqdm import tqdm
 from src.constants import CONFIGPATH, EVALPATH
-from src.eval import build_index
+from src.data.indexing import build_eval_index
 import hydra
 import numpy as np
 from omegaconf import DictConfig
@@ -13,7 +13,7 @@ from src.models.artsy import ARTSY
 def eval_ebm_nlp(cfg: DictConfig):
     # model = ARTSY(cfg.model)
     model = ARTSY.load_from_checkpoint(cfg.model.ckpt_path, weights_only=False)
-    index, idx_to_pmid, pmid_to_content = build_index(
+    index, idx_to_pmid, pmid_to_content = build_eval_index(
         model, index_name=cfg.index_name, clear=False
     )
     all_ranks = []

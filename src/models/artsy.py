@@ -7,7 +7,7 @@ import torch
 from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
-from src.models.pubmed_pico import PubMedPicoModel
+from src.models.pubmed_pico import PubMedPicoModel, PubMedPicoProjector
 from src.models.specter2 import SPECTER2Model
 from src.utils.configs import ARTSYConfig
 
@@ -18,16 +18,23 @@ class ARTSY(L.LightningModule):
     def __init__(self, cfg=ARTSYConfig):
         super().__init__()
         self.cfg = cfg
-        self.pico_embedder = PubMedPicoModel(cfg.pico_extractor)
-        self.extract_pico = self.pico_embedder.extract_pico
-        self.pico_embed_type = self.pico_embedder.embed_type
+
+        # PICO branch components
+        self.pico_extractor = PubMedPicoModel(cfg.pico_extractor)
+        self.extract_pico = self.pico_extractor.extract_pico
+        self.pico_projector = PubMedPicoProjector(
+            cfg.pico_extractor, self.pico_extractor.embed_dim
+        )
+        self.pico_embed_type = self.pico_projector.embed_type
+
+        # Paper branch components
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
         self.pico_combiner = Combiner(cfg.combiner)
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
-            pico_extractor=self.pico_embedder,
-            paper_embedder=self.paper_embedder,
+            pico_embed_type=self.pico_embed_type,
+            paper_embed_type=self.paper_embed_type,
             temperature=1,
         )
         self.save_hyperparameters()
@@ -36,12 +43,13 @@ class ARTSY(L.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.cfg.lr)
 
     def join_text(self, title, abstract):
-        return title + self.paper_embedder.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
+        return self.paper_embedder.join_text(title, abstract)
 
     @torch.no_grad
     def embed_query(self, pico):
-        pico_individual = self.pico_embedder.encode_pico(pico)
-        return self.pico_combiner(pico_individual).unsqueeze(0).cpu().numpy()
+        pico_individual = self.pico_extractor.encode_pico(pico)
+        pico_projected = self.pico_projector(pico_individual)
+        return self.pico_combiner(pico_projected).unsqueeze(0).cpu().numpy()
 
     @torch.no_grad()
     def embed_paper(self, title, abstract):
@@ -56,11 +64,12 @@ class ARTSY(L.LightningModule):
         for title, abstract in zip(*batch):
             text = self.join_text(title, abstract)
             texts.append(text)
-            pico_individual, pico_labels = self.pico_embedder(
+            pico_individual, pico_labels = self.pico_extractor(
                 text
             )  # [n_pico_elements, shared_dim]
+            pico_projected = self.pico_projector(pico_individual)
 
-            combined = self.pico_combiner(pico_individual, pico_labels)
+            combined = self.pico_combiner(pico_projected, pico_labels)
             for k, v in combined.items():
                 pico_agg[k].append(v)
 

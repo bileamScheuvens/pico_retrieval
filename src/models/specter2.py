@@ -11,8 +11,7 @@ from src.utils.configs import SPECTER2Config
 
 class SPECTER2Model(PaperEmbedder):
     def __init__(self, cfg: SPECTER2Config):
-        super().__init__()
-        self.cfg = cfg
+        super().__init__(cfg)
         # load model and tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)
 
@@ -36,6 +35,9 @@ class SPECTER2Model(PaperEmbedder):
                 cfg.hidden_dim,
                 cfg.shared_dim,
             )
+
+    def join_text(self, title, abstract):
+        return title + self.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
 
     @property
     def embed_type(self):

@@ -8,8 +8,8 @@ from seqeval.metrics.sequence_labeling import get_entities
 from torch import nn
 
 from src.constants import CACHEPATH, MODELPATH
-from src.models import PicoExtractor
-from src.models.model_heads import ProbabilisticEncoder
+from src.models import PicoExtractor, PicoProjector
+from src.models.model_heads import ProbabilisticEncoder, PointEncoder
 from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
 from src.utils.configs import PubMedPicoConfig, TextEmbedType
 
@@ -29,9 +29,28 @@ torch.nn.Module.load_state_dict = _unstrict_load  # ty:ignore[invalid-assignment
 from NERDA.models import NERDA  # noqa: E402
 
 
+class PubMedPicoProjector(PicoProjector):
+    def __init__(self, cfg: PubMedPicoConfig, in_dim: int):
+        super().__init__(cfg)
+
+        if cfg.use_prob_encoder:
+            self.model = ProbabilisticEncoder(in_dim, cfg.hidden_dim, cfg.shared_dim)
+        else:
+            self.model = PointEncoder(in_dim, cfg.hidden_dim, cfg.shared_dim)
+
+    def forward(self, pico_embeddings: list[torch.Tensor]) -> list[torch.Tensor]:
+        return list(self.model(torch.stack(pico_embeddings)))
+
+    @property
+    def embed_type(self) -> str:
+        if self.cfg.use_prob_encoder:
+            return "prob"
+        return "point"
+
+
 class PubMedPicoModel(PicoExtractor):
     def __init__(self, cfg: PubMedPicoConfig):
-        super().__init__()
+        super().__init__(cfg)
         tag_scheme = [
             "B-Patient",
             "I-Patient",
@@ -43,13 +62,12 @@ class PubMedPicoModel(PicoExtractor):
             "I-Outcome",
         ]
 
-        self.cfg = cfg
-
         # extract pico from text
         ## load and freeze extractor
         self.extractor = NERDA(
             cfg.base_url, tag_scheme=tag_scheme, tag_outside="O", max_len=cfg.max_len
         )
+        self.extractor.transformer_tokenizer
         self.extractor.load_network_from_file(MODELPATH / "pubmedpico.bin")
 
         for p in self.extractor.network.parameters():
@@ -93,10 +111,11 @@ class PubMedPicoModel(PicoExtractor):
             )
 
     @property
-    def embed_type(self):
-        if self.cfg.use_prob_encoder:
-            return "prob"
-        return "point"
+    def embed_dim(self):
+        return self.text_encoder.embed_dim
+
+    def join_text(self, title, abstract):
+        return title + self.extractor.transformer_tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
 
     def forward(
         self,
@@ -117,8 +136,6 @@ class PubMedPicoModel(PicoExtractor):
             if not elements or (torch.rand(1) < pico_dropout_coeff):
                 elements = ["[MISSING]"]
             for e in elements:
-                point_embed = self.text_encoder(f"{pico_type}: {e}")
-                final_embed = self.pico_head(point_embed)
                 pico_labels.append(pico_type)
-                pico_embeddings.append(final_embed)
+                pico_embeddings.append(self.text_encoder(f"{pico_type}: {e}"))
         return pico_embeddings, pico_labels

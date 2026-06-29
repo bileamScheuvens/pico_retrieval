@@ -4,8 +4,15 @@ import lightning as L
 
 
 class PicoExtractor(L.LightningModule):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.cfg = cfg
+
+
+class PicoProjector(L.LightningModule):
+    def __init__(self, cfg, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cfg = cfg
 
     @property
     @abstractmethod
@@ -15,8 +22,9 @@ class PicoExtractor(L.LightningModule):
 
 
 class PaperEmbedder(L.LightningModule):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.cfg = cfg
 
     @property
     @abstractmethod
