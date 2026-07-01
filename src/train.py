@@ -46,7 +46,7 @@ def train_artsy(cfg: ExperimentConfig):
         callbacks=[
             ModelCheckpoint(
                 dirpath=EXPERIMENT_DIR / "checkpoints",
-                every_n_train_steps=1000,
+                every_n_train_steps=250,
                 save_on_exception=True,
             ),
             EarlyStopping("val/loss", patience=patience),

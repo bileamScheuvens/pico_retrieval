@@ -1,20 +1,17 @@
 from collections import defaultdict
 
 import torch
-import torch.nn.functional as F
 
+## monkeypatch NERDA
+import transformers
 from joblib import Memory
 from seqeval.metrics.sequence_labeling import get_entities
 from torch import nn
 
 from src.constants import CACHEPATH, MODELPATH
-from src.models import PicoExtractor, PicoProjector
-from src.models.model_heads import ProbabilisticEncoder, PointEncoder
-from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
-from src.utils.configs import PubMedPicoConfig, TextEmbedType
-
-## monkeypatch NERDA
-import transformers
+from src.models import PicoExtractor, PicoProjector, TextEncoderFactory
+from src.models.model_heads import PointEncoder, ProbabilisticEncoder
+from src.utils.configs import PubMedPicoConfig
 
 transformers.AdamW = torch.optim.AdamW  # ty:ignore[unresolved-attribute]
 _strict_load = torch.nn.Module.load_state_dict
@@ -90,10 +87,7 @@ class PubMedPicoModel(PicoExtractor):
             self.extract_pico = _extract_pico
 
         # get point embeddings from pico
-        if cfg.text_embed_type == TextEmbedType.SENTENCE:
-            self.text_encoder = SentenceTransformerModel(cfg.text_embedder_url)
-        elif cfg.text_embed_type == TextEmbedType.PROMPTREPS:
-            self.text_encoder = PromptRepsModel(cfg.text_embedder_url)
+        self.text_encoder = TextEncoderFactory(cfg)
 
         if cfg.use_prob_encoder:
             # turn point embeddings to gaussian

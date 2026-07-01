@@ -25,7 +25,6 @@ def eval_ebm_nlp(cfg: DictConfig):
         sim, ranks = index.search(pico_embed, index.ntotal)
         all_ranks.append(np.where(ranks == idx)[1])
     all_ranks = np.array(all_ranks)
-    breakpoint()
     results = {
         "mrr": np.mean(1 / (all_ranks + 1)).round(3),
         "recall@1": np.mean(all_ranks < 1).round(2),

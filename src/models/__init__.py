@@ -1,6 +1,9 @@
-from src.utils.configs import PicoCombinerConfig
 from abc import abstractmethod
+
 import lightning as L
+
+from src.models.text_embedders import PromptRepsModel, SentenceTransformerModel
+from src.utils.configs import TextEmbedType
 
 
 class PicoExtractor(L.LightningModule):
@@ -31,3 +34,11 @@ class PaperEmbedder(L.LightningModule):
     def embed_type(self) -> str:
         """Must specify whether embedding type is point or probabilistic."""
         pass
+
+
+def TextEncoderFactory(cfg):
+    if cfg.text_embed_type == TextEmbedType.SENTENCE:
+        return SentenceTransformerModel(cfg.text_embedder.value)
+    if cfg.text_embed_type == TextEmbedType.PROMPTREPS:
+        return PromptRepsModel(cfg.text_embedder.value)
+    raise NotImplementedError(f"No text encoder of type {cfg.text_embed_type}")

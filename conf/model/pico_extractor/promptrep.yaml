@@ -1,5 +1,5 @@
 defaults:
   - pubmed_pico
 
-# text_embedder_url: Qwen/Qwen2.5-1.5B-Instruct
-# text_embed_type: PROMPTREPS
+text_embedder_url: QWEN
+text_embed_type: PROMPTREPS

@@ -6,11 +6,11 @@ from transformers import AutoTokenizer
 
 from src.models import PaperEmbedder
 from src.models.model_heads import ProbabilisticEncoder, PointEncoder
-from src.utils.configs import SPECTER2Config
+from src.utils.configs import PaperEmbedderConfig
 
 
 class SPECTER2Model(PaperEmbedder):
-    def __init__(self, cfg: SPECTER2Config):
+    def __init__(self, cfg: PaperEmbedderConfig):
         super().__init__(cfg)
         # load model and tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)

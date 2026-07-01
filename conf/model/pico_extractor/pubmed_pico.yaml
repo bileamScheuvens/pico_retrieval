@@ -1,7 +1,7 @@
 defaults:
   - base_pubmed_pico
 base_url: microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract
-text_embedder_url: neuml/pubmedbert-base-embeddings
+text_embedder: PUBMEDBERT
 text_embed_type: SENTENCE
 use_prob_encoder: true
 pico_dropout: 0.2

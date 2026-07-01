@@ -1,23 +1,14 @@
-from src.constants import MODELPATH
-from torch import nn
 import torch
 
-import onnxruntime as ort
-from transformers import AutoTokenizer
-
-from src.models import PaperEmbedder
-from src.models.model_heads import ProbabilisticEncoder
-from src.utils.configs import SPECTER2Config
+from src.models import PaperEmbedder, TextEncoderFactory
+from src.models.model_heads import PointEncoder, ProbabilisticEncoder
+from src.utils.configs import PaperEmbedderConfig
 
 
 class PlainEmbedder(PaperEmbedder):
-    def __init__(self, cfg: SPECTER2Config):
-        super().__init__()
-        self.cfg = cfg
-        if cfg.text_embed_type == TextEmbedType.SENTENCE:
-            self.text_encoder = SentenceTransformerModel(cfg.text_embedder_url)
-        elif cfg.text_embed_type == TextEmbedType.PROMPTREPS:
-            self.text_encoder = PromptRepsModel(cfg.text_embedder_url)
+    def __init__(self, cfg: PaperEmbedderConfig):
+        super().__init__(cfg)
+        self.text_encoder = TextEncoderFactory(cfg)
 
         if cfg.use_prob_encoder:
             # turn point embeddings to gaussian
@@ -27,11 +18,8 @@ class PlainEmbedder(PaperEmbedder):
                 cfg.shared_dim,
             )
         else:
-            self.pico_head = nn.Sequential(
-                nn.Linear(self.text_encoder.embed_dim, cfg.hidden_dim),
-                nn.GELU(),
-                nn.LayerNorm(cfg.hidden_dim),
-                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
+            self.pico_head = PointEncoder(
+                self.text_encoder.embed_dim, cfg.hidden_dim, cfg.shared_dim
             )
 
     @property

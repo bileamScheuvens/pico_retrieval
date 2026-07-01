@@ -1,0 +1,10 @@
+defaults:
+  - base_hardnegative
+
+sampler_type: HARDNEGATIVE
+extractor_model: PUBMEDBERT
+corpus: ebm_nlp
+n_candidates: 50
+n_subcandidates: 50
+n_anchors: 4
+n_per_anchor: 4
