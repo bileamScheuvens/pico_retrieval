@@ -141,16 +141,23 @@ class ARTSYConfig:
     combiner: PicoCombinerConfig
     lr: float
     l2_lambda: float
-    ckpt_path: Optional[Union[str, Path]] = None
+    ckpt_path: Optional[str] = None
 
 
 cs.store(group="model", name="base_model", node=ARTSYConfig)
+
+
+class EvalMethods(Enum):
+    EBM_NLP = "ebm_nlp"
+    VIS = "visualisation"
+    PROBE = "probing"
 
 
 @dataclass
 class EvalConfig:
     model: ARTSYConfig
     data: SciDocDataConfig
+    eval_method: EvalMethods
     index_name: str = "index"
 
 

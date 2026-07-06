@@ -1,10 +1,16 @@
 defaults:
-  - model: base_eval
+  - base_eval
+  - model: default
+  - data: default
   - _self_
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled
 
-index_name: eval
+index_name: bigbatch
+eval_method: VIS
+
+model:
+  ckpt_path: checkpoints/bigbatch3000.ckpt
 
 hydra:
   output_subdir: null
