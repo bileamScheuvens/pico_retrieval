@@ -12,12 +12,14 @@ class ProbabilisticEncoder(L.LightningModule):
         )
         self.mu_head = nn.Linear(hidden_dim, shared_dim)
         self.logsigma_head = nn.Linear(hidden_dim, shared_dim)
-        self.clamp_val = 5
+        self.clamp_val = 2
 
     def forward(self, x) -> torch.Tensor:
         x = self.backbone(x)
         mu = F.normalize(self.mu_head(x), dim=-1)
-        clamped_logsigma = self.logsigma_head(x).clamp(-self.clamp_val, self.clamp_val)
+        # TODO
+        # clamped_logsigma = self.logsigma_head(x).clamp(-self.clamp_val, self.clamp_val)
+        clamped_logsigma = self.logsigma_head(x).clamp(-2, 0.5)
         return torch.stack((mu, clamped_logsigma), dim=-2)  # [B, 2, D]
 
 

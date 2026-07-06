@@ -47,14 +47,15 @@ class ARTSY(L.LightningModule):
 
     @torch.no_grad
     def embed_query(self, pico):
-        pico_individual = self.pico_extractor.encode_pico(pico)
+        pico_individual, labels = self.pico_extractor.encode_pico(pico)
         pico_projected = self.pico_projector(pico_individual)
-        return self.pico_combiner(pico_projected).unsqueeze(0).cpu().numpy()
+        means = self.pico_combiner(pico_projected, labels)["mean"]
+        return means.unsqueeze(0).cpu()
 
     @torch.no_grad()
     def embed_paper(self, title, abstract):
         paper_embed = self.paper_embedder(self.join_text(title, abstract))
-        return paper_embed.cpu().numpy()
+        return paper_embed.cpu()
 
     def forward(self, batch):
         # TODO support batching better
@@ -78,14 +79,15 @@ class ARTSY(L.LightningModule):
         }
 
         if self.paper_embed_type == "prob":
-            paper_means, paper_variances = self.paper_embedder(texts)
-            preds["paper_means"] = paper_means
-            preds["paper_variances"] = paper_variances
+            paper_embedding = self.paper_embedder(texts)  # [B, 2, shared_dim]
+            preds["paper_means"] = paper_embedding[..., 0, :]
+            preds["paper_logvars"] = paper_embedding[..., 1, :]
+
         else:
             preds["paper_means"] = self.paper_embedder(texts)
 
         if self.pico_embed_type == "prob":
-            preds["pico_variances"] = torch.stack(pico_agg["variance"])
+            preds["pico_logvars"] = torch.stack(pico_agg["variance"])
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
         return preds
@@ -94,18 +96,18 @@ class ARTSY(L.LightningModule):
         self,
         paper_means,
         pico_means,
-        paper_variances=None,
-        pico_variances=None,
+        paper_logvars=None,
+        pico_logvars=None,
         pico_zs=None,
         prefix="train",
     ):
         # TODO bidirectional retrieval loss
         retrieval_loss, recall = self.retrieval_loss.forward(
             query=pico_means,
-            query_logsigma=pico_variances,
+            query_logsigma=pico_logvars,
             query_z=pico_zs,
             target=paper_means,
-            target_logsigma=paper_variances,
+            target_logsigma=paper_logvars,
             target_z=None,
             recall=True,
         )
@@ -114,13 +116,15 @@ class ARTSY(L.LightningModule):
             f"{prefix}/retrieval_loss": retrieval_loss,
             f"{prefix}/recall": recall,
         }
-        if pico_variances is not None:
-            l2_pico = self.cfg.l2_lambda * ((pico_variances) ** 2).mean()
+        if pico_logvars is not None:
+            l2_pico = self.cfg.l2_lambda * ((pico_logvars) ** 2).mean()
             metrics[f"{prefix}/l2_pico"] = l2_pico
+            metrics[f"{prefix}/mean_pico_var"] = pico_logvars.exp().mean()
             loss += l2_pico
-        if paper_variances is not None:
-            l2_paper = self.cfg.l2_lambda * ((paper_variances) ** 2).mean()
+        if paper_logvars is not None:
+            l2_paper = self.cfg.l2_lambda * ((paper_logvars) ** 2).mean()
             metrics[f"{prefix}/l2_paper"] = l2_paper
+            metrics[f"{prefix}/mean_paper_var"] = paper_logvars.exp().mean()
             loss += l2_paper
         metrics[f"{prefix}/loss"] = loss
         return metrics

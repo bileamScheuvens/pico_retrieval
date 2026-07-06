@@ -29,8 +29,8 @@ class Combiner(L.LightningModule):
     def __init__(self, cfg: PicoCombinerConfig):
         super().__init__()
         self.cfg = cfg
-        self.inter_combiner = AggFactory(cfg.inter_agg, cfg)
         self.intra_combiner = AggFactory(cfg.intra_agg, cfg)
+        self.inter_combiner = AggFactory(cfg.inter_agg, cfg)
 
     def forward(self, embeds, labels):
         if self.cfg.use_prob_encoder:
@@ -48,20 +48,18 @@ class Combiner(L.LightningModule):
 
     def forward_prob(self, embeds, labels):
         # embeds shape: [n_elements, 2, shared_dim]
-        inter_embeds = []
+        intra_embeds = []
         log_z = torch.zeros(1).to(self.device)
 
         for label in set(labels):
-            current_embeds = [
-                torch.stack(e) for (e, e_l) in zip(embeds, labels) if e_l == label
-            ]
-            inter_embed = self.inter_combiner(torch.stack(current_embeds))
-            inter_embeds.append(
-                torch.stack((inter_embed["mean"], inter_embed["variance"]))
+            current_embeds = [e for (e, e_l) in zip(embeds, labels) if e_l == label]
+            intra_embed = self.intra_combiner(current_embeds)
+            intra_embeds.append(
+                torch.stack((intra_embed["mean"], intra_embed["variance"]))
             )
-            log_z += inter_embed["log_z"].detach()
+            log_z += intra_embed["log_z"]
         # stack all
-        return self.intra_combiner(inter_embeds, log_z=log_z)
+        return self.inter_combiner(intra_embeds, log_z=log_z)
 
 
 class HadamardCombiner(L.LightningModule):

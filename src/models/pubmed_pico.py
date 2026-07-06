@@ -36,7 +36,8 @@ class PubMedPicoProjector(PicoProjector):
             self.model = PointEncoder(in_dim, cfg.hidden_dim, cfg.shared_dim)
 
     def forward(self, pico_embeddings: list[torch.Tensor]) -> list[torch.Tensor]:
-        return list(self.model(torch.stack(pico_embeddings)))
+        # [B, shared_dim] or [B, 2, shared_dim] for prob
+        return self.model(torch.stack(pico_embeddings))
 
     @property
     def embed_type(self) -> str:
@@ -70,13 +71,15 @@ class PubMedPicoModel(PicoExtractor):
         for p in self.extractor.network.parameters():
             p.requires_grad = False
 
-        def _extract_pico(text):
+        def _extract_pico(text) -> defaultdict:
             """Annotate pico elements and extract as sequences."""
             words_by_sent, tags_by_sent = self.extractor.predict_text(text)
             PICO = defaultdict(list)
             for words, tags in zip(words_by_sent, tags_by_sent):
                 for label, start, end in get_entities(tags):
                     PICO[label].append(" ".join(words[start : end + 1]))
+            #
+            PICO.default_factory = lambda: [self.MISSING_TOKEN]
             return PICO
 
         # cache extractions
@@ -89,24 +92,13 @@ class PubMedPicoModel(PicoExtractor):
         # get point embeddings from pico
         self.text_encoder = TextEncoderFactory(cfg)
 
-        if cfg.use_prob_encoder:
-            # turn point embeddings to gaussian
-            self.pico_head = ProbabilisticEncoder(
-                self.text_encoder.embed_dim,
-                cfg.hidden_dim,
-                cfg.shared_dim,
-            )
-        else:
-            self.pico_head = nn.Sequential(
-                nn.Linear(self.text_encoder.embed_dim, cfg.hidden_dim),
-                nn.GELU(),
-                nn.LayerNorm(cfg.hidden_dim),
-                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
-            )
-
     @property
     def embed_dim(self):
         return self.text_encoder.embed_dim
+
+    @property
+    def MISSING_TOKEN(self):
+        return "[MISSING]"
 
     def join_text(self, title, abstract):
         return title + self.extractor.transformer_tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
@@ -128,7 +120,7 @@ class PubMedPicoModel(PicoExtractor):
                 continue
             elements = PICO[pico_type]
             if not elements or (torch.rand(1) < pico_dropout_coeff):
-                elements = ["[MISSING]"]
+                elements = [self.MISSING_TOKEN]
             for e in elements:
                 pico_labels.append(pico_type)
                 pico_embeddings.append(self.text_encoder(f"{pico_type}: {e}"))

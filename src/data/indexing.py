@@ -33,7 +33,7 @@ def build_eval_index(model: ARTSY, index_name, clear=False):
         pmid_to_content[pmid] = (i, title, abstract)
         if i < index_size:
             continue
-        index.add(model.embed_paper(title, abstract))  # ty:ignore[missing-argument]
+        index.add(model.embed_paper(title, abstract).numpy())  # ty:ignore[missing-argument]
         if i % 2500 == 0 or i == len(ebm_nlp) - 1:
             faiss.write_index(index, str(full_path))
     return index, idx_to_pmid, pmid_to_content
@@ -178,6 +178,5 @@ class PICOIndex:
         # prevent retrieving itself
         candidates[anchor_pmid] = 0
         # return top candidates docs
-        # TODO check ascending correct
         sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
         return list(dict(sorted_candidates[: self.n_candidates]).keys())

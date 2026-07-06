@@ -21,24 +21,27 @@ class MpcRetrievalLoss(L.LightningModule):
         target_z,
         reduction="mean",
         recall=False,
+        n_samples=10,
         **kwargs,
     ):
-        target_samples = sample_gaussian_tensors(target, target_logsigma, 7)
+
+        # TODO
+        target_samples = sample_gaussian_tensors(
+            target, target_logsigma, n_samples
+        )  # [B, n_samples, shared_dim]
 
         inv_sigmas = torch.exp(-query_logsigma)
-        loc = -0.5 * torch.mean(
-            torch.sum(
-                ((target_samples.unsqueeze(0) - query.unsqueeze(1).unsqueeze(2)) ** 2)
-                * inv_sigmas.unsqueeze(1).unsqueeze(2),
-                dim=-1,
-            ),
-            dim=-1,
-        )
+
         norm_constant = (-query.shape[-1] / 2) * self.log_2pi - 0.5 * (
-            torch.sum(query_logsigma, dim=-1)
+            torch.sum(query_logsigma, dim=-1, keepdim=True)
         )
-        scores = query_z + norm_constant + loc
-        scores = scores - torch.max(scores, dim=0, keepdim=True).values
+
+        diff = torch.mean(
+            (target_samples.unsqueeze(0) - query.unsqueeze(1).unsqueeze(2)) ** 2, dim=-2
+        )
+        log_prob = -0.5 * (diff * inv_sigmas).sum(-1) + norm_constant
+        scores = query_z + log_prob
+        # scores = scores - torch.max(scores, dim=0, keepdim=True).values
 
         labels = torch.arange(0, query.shape[0], device=self.device).long()
         loss = F.cross_entropy(scores / self.temperature, labels, reduction=reduction)
@@ -46,6 +49,7 @@ class MpcRetrievalLoss(L.LightningModule):
             max_scores = torch.max(scores, dim=0).indices - torch.arange(
                 0, query.shape[0], device=self.device
             )
+
             recall = torch.count_nonzero(max_scores == 0) / query.shape[0]
             return loss, recall
         return loss
@@ -92,22 +96,16 @@ class LikelihoodRetrievalLoss(L.LightningModule):
         recall=False,
         **kwargs,
     ):
-        query = F.normalize(query, dim=-1)
-
         inv_sigmas = torch.exp(-query_logsigma)
-        loc = -0.5 * torch.mean(
-            torch.sum(
-                ((target.unsqueeze(0) - query.unsqueeze(1).unsqueeze(2)) ** 2)
-                * inv_sigmas.unsqueeze(1).unsqueeze(2),
-                dim=-1,
-            ),
-            dim=-1,
-        )
+
         norm_constant = (-query.shape[-1] / 2) * self.log_2pi - 0.5 * (
-            torch.sum(query_logsigma, dim=-1)
+            torch.sum(query_logsigma, dim=-1, keepdim=True)
         )
-        scores = query_z + norm_constant + loc
-        scores = scores - torch.max(scores, dim=0, keepdim=True).values
+
+        diff = (target.unsqueeze(0) - query.unsqueeze(1)) ** 2
+        log_prob = -0.5 * (diff * inv_sigmas).sum(-1) + norm_constant
+        scores = query_z + log_prob
+        # scores = scores - torch.max(scores, dim=0, keepdim=True).values
 
         labels = torch.arange(0, query.shape[0], device=self.device).long()
         loss = F.cross_entropy(scores / self.temperature, labels, reduction=reduction)
@@ -115,6 +113,8 @@ class LikelihoodRetrievalLoss(L.LightningModule):
             max_scores = torch.max(scores, dim=0).indices - torch.arange(
                 0, query.shape[0], device=self.device
             )
+
             recall = torch.count_nonzero(max_scores == 0) / query.shape[0]
             return loss, recall
+
         return loss
