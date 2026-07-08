@@ -36,7 +36,9 @@
               joblib
               hydra-core
               omegaconf
+              pandas
               onnxscript
+              gradio
               onnxruntime
               biopython
               ipdb

@@ -34,10 +34,3 @@ def eval_ebm_nlp(cfg: DictConfig):
     }
     with open(EVALPATH / f"{cfg.index_name}.json", "w") as f:
         f.write(json.dumps(results))
-
-    # pico = {
-    #     "Patient": ["subjects without pxs"],
-    #     "Intervention": ["Pupillay Dilation"],
-    #     "Control": ["Intraocular Pressure and Anterior Segment Morphology"],
-    #     "Outcome": [],
-    # }

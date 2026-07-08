@@ -41,12 +41,23 @@ def plot_means_subsets(
             y=coords[:, 1],
             mode="markers",
             name=label,
-            marker={"color": list(range(num)), "colorscale": "Turbo", "symbol": symbol},
-            showlegend=False,
+            marker={
+                "color": list(range(num)),
+                "colorscale": "Turbo",
+                "symbol": symbol,
+                "line": {
+                    "width": 1,
+                    "color": list(range(num)),
+                    "colorscale": "Turbo",
+                },
+            },
             text=[f"[{label}]: {title}" for title in paper_titles],
         )
 
     add_scatter("paper", paper_means, "diamond")
-    for subset, means in query_means.items():
-        add_scatter(subset, means, "x")
+
+    for (subset, means), symbol in zip(
+        query_means.items(), ["asterisk", "line-ns", "line-ew", "line-ne", "line-nw"]
+    ):
+        add_scatter(subset, means, symbol)
     return fig

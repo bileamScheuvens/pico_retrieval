@@ -25,7 +25,7 @@ def eval_visualisation(cfg: DictConfig):
     datamodule = SciDocDatamodule(cfg.data)
     datamodule.setup("fit")
     val_data = datamodule.val_data
-    N = 256
+    N = 128
     titles = []
     paper_means = []
     pico_means = defaultdict(list)
@@ -44,4 +44,4 @@ def eval_visualisation(cfg: DictConfig):
     pico_means = {k: torch.cat(v) for k, v in pico_means.items()}
     paper_means = torch.cat(paper_means)
     fig = plot_means_subsets(pico_means, paper_means, titles)
-    fig.write_html(EVALPATH / f"eval_{cfg.index_name}")
+    fig.write_html(EVALPATH / f"eval_{cfg.index_name}.html")

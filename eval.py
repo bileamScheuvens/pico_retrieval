@@ -1,3 +1,4 @@
+from src.eval.eval_probe import eval_probe
 import hydra
 from omegaconf import DictConfig
 
@@ -13,6 +14,8 @@ def eval(cfg: DictConfig):
         return eval_ebm_nlp(cfg)
     if cfg.eval_method == EvalMethods.VIS:
         return eval_visualisation(cfg)
+    if cfg.eval_method == EvalMethods.PROBE:
+        return eval_probe(cfg)
     raise NotImplementedError
 
 
