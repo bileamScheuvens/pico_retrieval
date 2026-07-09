@@ -1,0 +1,4 @@
+index_name: prob_pico
+
+model:
+  ckpt_path: checkpoints/prob_pico_2500.ckpt

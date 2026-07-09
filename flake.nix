@@ -33,34 +33,34 @@
         buildInputs = with pkgs; [
           (python.withPackages (
             ps: with ps; [
-              joblib
-              hydra-core
-              omegaconf
-              pandas
-              onnxscript
-              gradio
-              onnxruntime
               biopython
+              dash
+              faiss
+              gradio
+              hydra-core
               ipdb
-              plotly
+              joblib
               kaleido
               lightning
               matplotlib
               networkx
               nltk
+              omegaconf
+              onnxruntime
+              onnxscript
               pandas
               peft
+              pip
+              pip-tools
+              plotly
+              pudb
               pytest
               sentence-transformers
               seqeval
               torch-geometric
-              faiss
               transformers
               umap-learn
               wandb
-              pudb
-              pip
-              pip-tools
               (buildPythonPackage (finalAttrs: {
                 pname = "ranx";
                 version = "v0.3.21";

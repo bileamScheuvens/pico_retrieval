@@ -22,13 +22,6 @@ def eval_probe(cfg: DictConfig):
         model, index_name=cfg.index_name, clear=False
     )
 
-    pico = {
-        "Patient": ["subjects without pxs"],
-        "Intervention": ["Pupillay Dilation"],
-        "Control": ["Intraocular Pressure and Anterior Segment Morphology"],
-        "Outcome": [],
-    }
-
     def _predict(Population, Intervention, Comparator, Outcome, k=15) -> pd.DataFrame:
         pico = {
             "Patient": Population.split("|"),
@@ -54,6 +47,4 @@ def eval_probe(cfg: DictConfig):
         inputs=["text", "text", "text", "text"],
         outputs=gr.DataFrame(wrap=True),
     )
-    demo.launch()
-
-    breakpoint()
+    demo.launch(share=True)

@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Optional, Union
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 from enum import Enum
 from dataclasses import dataclass
 from hydra.core.config_store import ConfigStore
@@ -150,6 +150,7 @@ cs.store(group="model", name="base_model", node=ARTSYConfig)
 class EvalMethods(Enum):
     EBM_NLP = "ebm_nlp"
     VIS = "visualisation"
+    DASH = "dash"
     PROBE = "probing"
 
 
@@ -157,6 +158,7 @@ class EvalMethods(Enum):
 class EvalConfig:
     model: ARTSYConfig
     data: SciDocDataConfig
+    experiment: Optional[dict]
     eval_method: EvalMethods
     index_name: str = "index"
 

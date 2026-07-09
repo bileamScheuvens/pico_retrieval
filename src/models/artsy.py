@@ -18,6 +18,7 @@ class ARTSY(L.LightningModule):
     def __init__(self, cfg=ARTSYConfig):
         super().__init__()
         self.cfg = cfg
+        self.strict_loading = False
 
         # PICO branch components
         self.pico_extractor = PubMedPicoModel(cfg.pico_extractor)
