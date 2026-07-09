@@ -46,7 +46,7 @@ class MpcRetrievalLoss(L.LightningModule):
         labels = torch.arange(0, query.shape[0], device=self.device).long()
         loss = F.cross_entropy(scores / self.temperature, labels, reduction=reduction)
         if recall:
-            max_scores = torch.max(scores, dim=0).indices - torch.arange(
+            max_scores = torch.max(scores, dim=1).indices - torch.arange(
                 0, query.shape[0], device=self.device
             )
 
@@ -110,7 +110,7 @@ class LikelihoodRetrievalLoss(L.LightningModule):
         labels = torch.arange(0, query.shape[0], device=self.device).long()
         loss = F.cross_entropy(scores / self.temperature, labels, reduction=reduction)
         if recall:
-            max_scores = torch.max(scores, dim=0).indices - torch.arange(
+            max_scores = torch.max(scores, dim=1).indices - torch.arange(
                 0, query.shape[0], device=self.device
             )
 
