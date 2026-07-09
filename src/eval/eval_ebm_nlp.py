@@ -13,6 +13,7 @@ def eval_ebm_nlp(cfg: DictConfig):
     model = ARTSY.load_from_checkpoint(
         cfg.model.ckpt_path, weights_only=False, strict=False
     )
+    model.eval()
     index, idx_to_pmid, pmid_to_content = build_eval_index(
         model, index_name=cfg.index_name, clear=False
     )

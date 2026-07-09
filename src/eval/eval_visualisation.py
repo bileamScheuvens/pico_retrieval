@@ -22,6 +22,7 @@ def eval_visualisation(cfg: DictConfig):
     model = ARTSY.load_from_checkpoint(
         cfg.model.ckpt_path, weights_only=False, strict=False
     )
+    model.eval()
     datamodule = SciDocDatamodule(cfg.data)
     datamodule.setup("fit")
     val_data = datamodule.val_data

@@ -1,16 +1,8 @@
-import os
-import pandas as pd
 import gradio as gr
-from src.data.indexing import build_eval_index
-from collections import defaultdict
-
-import torch
+import pandas as pd
 from omegaconf import DictConfig
-from tqdm import tqdm
 
-from src.constants import EVALPATH
-from src.data.scidocdata import SciDocDatamodule
-from src.metrics.plots import plot_means_subsets
+from src.data.indexing import build_eval_index
 from src.models.artsy import ARTSY
 
 
@@ -18,6 +10,7 @@ def eval_probe(cfg: DictConfig):
     model = ARTSY.load_from_checkpoint(
         cfg.model.ckpt_path, weights_only=False, strict=False
     )
+    model.eval()
     index, idx2pmid, pmid2content = build_eval_index(
         model, index_name=cfg.index_name, clear=False
     )
