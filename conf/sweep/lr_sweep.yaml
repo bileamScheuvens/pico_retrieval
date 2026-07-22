@@ -1,0 +1,10 @@
+# @package _global_
+
+trainer:
+  max_time: "00:00:05:00"
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model.lr: 0.05,0.005

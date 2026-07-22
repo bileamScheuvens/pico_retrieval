@@ -1,9 +1,10 @@
-from pathlib import Path
-from typing import Optional, Union
-from omegaconf import OmegaConf, DictConfig
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
 from hydra.core.config_store import ConfigStore
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import OmegaConf
 
 cs = ConfigStore()
 
@@ -55,6 +56,7 @@ class TrainerConfig:
     limit_train_batches: Optional[int] = None
     limit_val_batches: Optional[int] = None
     overfit_batches: int = 0
+    max_time: Optional[str] = None
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
@@ -152,6 +154,7 @@ class EvalMethods(Enum):
     VIS = "visualisation"
     DASH = "dash"
     PROBE = "probing"
+    TRANSFER = "transfer"
 
 
 @dataclass
@@ -180,3 +183,13 @@ cs.store(name="experiment_config", node=ExperimentConfig)
 
 def as_dict(conf):
     return OmegaConf.to_container(conf, resolve=True)
+
+
+def get_wandb_names(cfg):
+    hc = HydraConfig.get()
+    if "params" not in hc.sweeper:
+        return cfg.experiment_name, None
+    swept_params = hc.sweeper.params.keys()
+    group_name = "sweep_" + "_".join([x.split(".")[-1] for x in swept_params])
+    experiment_name = f"{group_name}-{'_'.join([str(OmegaConf.select(cfg, x)) for x in swept_params])}"
+    return experiment_name, group_name
