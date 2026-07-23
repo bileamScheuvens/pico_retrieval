@@ -1,10 +1,10 @@
 # @package _global_
 
 trainer:
-  max_time: "00:00:05:00"
+  max_time: "00:12:00:00"
 
 hydra:
   mode: MULTIRUN
   sweeper:
     params:
-      model.lr: 0.05,0.005
+      model.lr: 0.05,0.01, 0.005,0.001, 0.0005
