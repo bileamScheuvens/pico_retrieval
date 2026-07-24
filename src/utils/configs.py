@@ -187,7 +187,7 @@ def as_dict(conf):
 
 def get_wandb_names(cfg):
     hc = HydraConfig.get()
-    if "params" not in hc.sweeper:
+    if hc.sweeper.params is None:
         return cfg.experiment_name, None
     swept_params = hc.sweeper.params.keys()
     group_name = "sweep_" + "_".join([x.split(".")[-1] for x in swept_params])
