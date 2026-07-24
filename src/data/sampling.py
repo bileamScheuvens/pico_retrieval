@@ -50,11 +50,14 @@ class HardNegativeSampler(Sampler):
             for _ in range(self.n_anchors):
                 anchor = self.dataset.pmids[choice(self.subset.indices)]
                 global_dataset_idx.add(self.dataset.pmid2idx[anchor])
+                # get negative candidates
                 negatives = [
                     self.dataset.pmid2idx[x] for x in self.index.get_similar_doc(anchor)
                 ]
+                # filter out negatives not in this subset
                 # TODO find out if this is expensive
                 negatives = [x for x in negatives if x in self.subset_idx_map]
+                # add to batch
                 global_dataset_idx |= set(negatives[: self.n_per_anchor])
             # fill batch with random negatives ensuring no duplicates
             while len(global_dataset_idx) < self.batch_size:
