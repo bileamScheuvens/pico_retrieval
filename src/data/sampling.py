@@ -43,16 +43,23 @@ class HardNegativeSampler(Sampler):
         return len(self.subset) // self.batch_size
 
     def __iter__(self):
-        """One Batch consists of n_a anchors, n_n negatives per anchor and batch_size-(n_a * (n_n+1)) random samples"""
+        """
+        One Batch consists of n_a anchors, n_n negatives per anchor and batch_size-(n_a * (n_n+1)) random samples.
+        Returns list of indices
+        """
         for _ in range(len(self)):
             global_dataset_idx = set()
             # gather anchor and hard negatives
             for _ in range(self.n_anchors):
-                anchor = self.dataset.pmids[choice(self.subset.indices)]
-                global_dataset_idx.add(self.dataset.pmid2idx[anchor])
+                # pick anchor from subset
+                anchor = choice(self.subset.indices)
+                anchor_pmid = self.dataset.pmids[anchor]
+                global_dataset_idx.add(anchor)
+                # global_dataset_idx.add(self.dataset.pmid2idx[anchor])
                 # get negative candidates
                 negatives = [
-                    self.dataset.pmid2idx[x] for x in self.index.get_similar_doc(anchor)
+                    self.dataset.pmid2idx[x]
+                    for x in self.index.get_similar_doc(anchor_pmid)
                 ]
                 # filter out negatives not in this subset
                 # TODO find out if this is expensive

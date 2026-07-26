@@ -12,6 +12,21 @@ from src.models.specter2 import SPECTER2Model
 from src.utils.configs import ARTSYConfig
 
 
+class Dummy(L.LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.layer = torch.nn.Linear(5, 5)
+
+    def forward(self, batch):
+        pass
+
+    def training_step(self, batch, batch_idx):
+        return {"loss": torch.ones(1, requires_grad=True)}
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters())
+
+
 class ARTSY(L.LightningModule):
     """Approximate Retrieval Through Semantic Geometry"""
 
