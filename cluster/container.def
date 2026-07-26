@@ -17,7 +17,7 @@ requirements.txt /workspace/requirements.txt
     . /venv/bin/activate
 
     pip install git+https://github.com/bileamScheuvens/NERDA.git@fix-match_kwargs
-    pip install joblib hydra-core omegaconf onnxscript onnxruntime-gpu biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb faiss
+    pip install joblib hydra-core omegaconf onnxscript onnxruntime-gpu biopython ipdb plotly kaleido lightning matplotlib networkx nltk pandas peft pytest sentence-transformers seqeval torch-geometric transformers umap-learn wandb pudb faiss-cpu
 
     # cleanup
     apt-get clean

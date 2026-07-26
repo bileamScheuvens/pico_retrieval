@@ -55,4 +55,8 @@ def train_artsy(cfg: ExperimentConfig):
 
     # train
     trainer.fit(model, datamodule, ckpt_path=cfg.model.ckpt_path, weights_only=False)
+    # cleanup (necessary for multirun)
     wandb.finish()
+    del model
+    del trainer
+    del datamodule
