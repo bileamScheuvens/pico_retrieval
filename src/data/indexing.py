@@ -42,7 +42,7 @@ def build_eval_index(model: ARTSY, index_name, clear=False):
 class PICOIndex:
     """
     Index over all extracted pico elements, embedded with a language model. Implements set similarity:
-    sim(docA, docB) = mean(max_wrt_P(sim(docA, docB)), ...)
+    sim(docA, docB) = sum(mean(sim(docA_P, docB_P)), sim(docA_I, docB_I),...)
     """
 
     def __init__(
