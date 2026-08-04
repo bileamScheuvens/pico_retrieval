@@ -33,9 +33,11 @@ def eval_transfer(cfg: DictConfig):
     task_file = ROOT / "src" / "submodules" / "scirepeval" / "scirepeval_tasks.jsonl"
     evaluator = SciRepEval(
         tasks_config=str(task_file),
-        task_list=["SciDocs MeSH", "Biomimicry", "DRSM"],
+        task_list=["Biomimicry", "DRSM"],
         embedding_save_path=CACHEPATH / "transfer.pt",
     )
 
-    for name, model in zip(["artsy", "specter"], [artsy, specter]):
-        evaluator.evaluate(model, f"transfer_{name}.json")
+    breakpoint()
+    evaluator.evaluate(artsy, f"transfer_{cfg.index_name}.json")
+    # for name, model in zip(["artsy", "specter"], [artsy, specter]):
+    #     evaluator.evaluate(model, f"transfer_{name}.json")

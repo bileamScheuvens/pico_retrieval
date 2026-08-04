@@ -1,0 +1,5 @@
+# @package _global_
+index_name: hardneg
+
+model:
+  ckpt_path: checkpoints/hardneg_2500.ckpt

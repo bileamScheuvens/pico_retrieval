@@ -20,7 +20,7 @@ def SamplerFactory(cfg, dataset):
     if cfg.sampler.sampler_type == SamplerType.HARDNEGATIVE:
         return HardNegativeSampler(cfg.sampler, cfg.batch_size, dataset)
 
-    raise NotImplementedError(f"No sampler of type {cfg.text_embed_type}")
+    raise NotImplementedError(f"No sampler of type {cfg.sampler.sampler_type}")
 
 
 class HardNegativeSampler(Sampler):
