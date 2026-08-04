@@ -37,7 +37,6 @@ def eval_transfer(cfg: DictConfig):
         embedding_save_path=CACHEPATH / "transfer.pt",
     )
 
-    breakpoint()
     evaluator.evaluate(artsy, f"transfer_{cfg.index_name}.json")
-    # for name, model in zip(["artsy", "specter"], [artsy, specter]):
-    #     evaluator.evaluate(model, f"transfer_{name}.json")
+    for name, model in zip(["artsy", "specter"], [artsy, specter]):
+        evaluator.evaluate(model, f"transfer_{name}.json")

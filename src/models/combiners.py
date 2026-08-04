@@ -1,36 +1,40 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import lightning as L
 import torch
+from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.nn.functional import normalize
 
 from src.utils.configs import PicoAggType, PicoCombinerConfig
 
 
-def AggFactory(agg_type: PicoAggType, cfg: PicoCombinerConfig) -> Callable:
+def AggFactory(
+    agg_type: PicoAggType,
+    cfg: PicoCombinerConfig,
+    shared_dim: Optional[int],
+) -> Callable:
     if agg_type == PicoAggType.SUM:
         return lambda x: normalize(torch.sum(x, dim=0), dim=0)
-    if agg_type == PicoAggType.MEAN:
-        return lambda x: normalize(torch.mean(x, dim=0), dim=0)
     if agg_type == PicoAggType.HADAMARD:
         return lambda x: normalize(torch.prod(x, dim=0), dim=0)
     if agg_type == PicoAggType.ATTN:
-        return AttentionCombiner(cfg)
+        return AttentionCombiner(cfg, shared_dim)
     if agg_type == PicoAggType.GAUSSIAN:
         return MpcCombiner(cfg)
     if agg_type == PicoAggType.MLP:
-        raise NotImplementedError
+        return MLPCombiner(cfg, shared_dim)
 
 
 class Combiner(L.LightningModule):
     """Combine individual pico embeddings. First within category (ideally logical OR), then between categories (logical AND)."""
 
-    def __init__(self, cfg: PicoCombinerConfig):
+    def __init__(self, cfg: PicoCombinerConfig, shared_dim, use_prob_encoder):
         super().__init__()
+        cfg.use_prob_encoder = use_prob_encoder
         self.cfg = cfg
-        self.intra_combiner = AggFactory(cfg.intra_agg, cfg)
-        self.inter_combiner = AggFactory(cfg.inter_agg, cfg)
+        self.intra_combiner = AggFactory(cfg.intra_agg, cfg, shared_dim=shared_dim)
+        self.inter_combiner = AggFactory(cfg.inter_agg, cfg, shared_dim=shared_dim)
 
     def forward(self, embeds, labels):
         if self.cfg.use_prob_encoder:
@@ -62,14 +66,55 @@ class Combiner(L.LightningModule):
         return self.inter_combiner(intra_embeds, log_z=log_z)
 
 
-class HadamardCombiner(L.LightningModule):
-    def __init__(self, cfg: PicoCombinerConfig):
+class MLPCombiner(L.LightningModule):
+    def __init__(self, cfg: PicoCombinerConfig, shared_dim):
+        super().__init__()
         self.cfg = cfg
+        self.shared_dim = shared_dim
+        self.flattened_dim = (2 if cfg.use_prob_encoder else 1) * shared_dim
+        self.model = nn.Linear(self.flattened_dim, self.flattened_dim)
+
+    def forward(self, embeddings, log_z=None):
+        agg = torch.zeros(self.flattened_dim, device=self.device)
+        for x in embeddings:
+            agg += self.model(x.reshape(self.flattened_dim))
+
+        if self.cfg.use_prob_encoder:
+            mean, var = agg.reshape(2, self.shared_dim)
+            return {
+                "mean": normalize(mean, dim=0),
+                "variance": var.clamp(min=0),
+                "log_z": torch.zeros(1, device=self.device),
+            }
+
+        return normalize(agg, dim=0)
 
 
 class AttentionCombiner(L.LightningModule):
-    def __init__(self, cfg: PicoCombinerConfig):
-        pass
+    def __init__(self, cfg: PicoCombinerConfig, shared_dim):
+        super().__init__()
+        self.cfg = cfg
+        self.shared_dim = shared_dim
+        self.flattened_dim = (2 if cfg.use_prob_encoder else 1) * shared_dim
+        encoder_layer = nn.TransformerEncoderLayer(
+            self.flattened_dim, nhead=cfg.n_heads, batch_first=True
+        )
+        self.model = nn.TransformerEncoder(encoder_layer, num_layers=4)
+        # TODO init layers better
+
+    def forward(self, embeddings, log_z=None):
+        flattened = torch.stack(embeddings).reshape(
+            -1, self.flattened_dim
+        )  # [n_elements, (2*)*D]
+        pooled = self.model(flattened).mean(dim=0)  # [(2*)*D]
+        if self.cfg.use_prob_encoder:
+            mean, var = pooled.reshape(2, -1)
+            return {
+                "mean": normalize(mean, dim=0),
+                "variance": var.clamp(min=0),
+                "log_z": torch.zeros(1, device=self.device),
+            }
+        return pooled
 
 
 class MpcCombiner(L.LightningModule):

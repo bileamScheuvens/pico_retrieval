@@ -1,4 +1,4 @@
-# pack hacking
+# path hacking
 from pathlib import Path
 import sys
 

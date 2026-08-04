@@ -1,4 +1,0 @@
-defaults:
-  - specter2
-
-use_prob_encoder: false

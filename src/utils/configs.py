@@ -116,7 +116,6 @@ cs.store(group="model/paper_embedder", name="base_specter2", node=PaperEmbedderC
 
 
 class PicoAggType(Enum):
-    MEAN = "mean"
     SUM = "sum"
     ATTN = "attention"
     GAUSSIAN = "gaussian"

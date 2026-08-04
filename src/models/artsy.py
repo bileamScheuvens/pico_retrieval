@@ -46,7 +46,11 @@ class ARTSY(L.LightningModule):
         # Paper branch components
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
-        self.pico_combiner = Combiner(cfg.combiner)
+        self.pico_combiner = Combiner(
+            cfg.combiner,
+            shared_dim=cfg.pico_extractor.shared_dim,
+            use_prob_encoder=cfg.pico_extractor.use_prob_encoder,
+        )
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
             pico_embed_type=self.pico_embed_type,

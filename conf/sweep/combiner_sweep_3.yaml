@@ -1,0 +1,14 @@
+# @package _global_
+
+trainer:
+  max_time: "00:12:00:00"
+
+data:
+  batch_size: 32
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model.combiner.intra_agg: ATTN
+      model.combiner.inter_agg: GAUSSIAN, MLP, ATTN
