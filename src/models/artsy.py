@@ -107,7 +107,7 @@ class ARTSY(L.LightningModule):
             preds["paper_means"] = self.paper_embedder(texts)
 
         if self.pico_embed_type == "prob":
-            preds["pico_logvars"] = torch.stack(pico_agg["variance"])
+            preds["pico_logvars"] = torch.stack(pico_agg["logvar"])
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
         return preds

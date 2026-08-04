@@ -59,7 +59,7 @@ class Combiner(L.LightningModule):
             current_embeds = [e for (e, e_l) in zip(embeds, labels) if e_l == label]
             intra_embed = self.intra_combiner(current_embeds)
             intra_embeds.append(
-                torch.stack((intra_embed["mean"], intra_embed["variance"]))
+                torch.stack((intra_embed["mean"], intra_embed["logvar"]))
             )
             log_z += intra_embed["log_z"]
         # stack all
@@ -83,7 +83,7 @@ class MLPCombiner(L.LightningModule):
             mean, var = agg.reshape(2, self.shared_dim)
             return {
                 "mean": normalize(mean, dim=0),
-                "variance": var.clamp(min=0),
+                "logvar": var.clamp(-2, 0.5),
                 "log_z": torch.zeros(1, device=self.device),
             }
 
@@ -111,7 +111,7 @@ class AttentionCombiner(L.LightningModule):
             mean, var = pooled.reshape(2, -1)
             return {
                 "mean": normalize(mean, dim=0),
-                "variance": var.clamp(min=0),
+                "logvar": var.clamp(-2, 0.5),
                 "log_z": torch.zeros(1, device=self.device),
             }
         return pooled
@@ -128,43 +128,43 @@ class MpcCombiner(L.LightningModule):
         if len(embeddings) == 1:
             combined = {
                 "mean": embeddings[0][0],
-                "variance": embeddings[0][1],
+                "logvar": embeddings[0][1],
                 "log_z": log_z.to(self.device),
             }
         else:
             prior_mean = embeddings[0][0]
-            prior_variance = embeddings[0][1]
+            prior_logvar = embeddings[0][1]
             log_z_total = log_z.to(self.device)
             for i in range(1, len(embeddings)):
                 posterior_mean, posterior_variance, log_z = product_2_gaussians(
                     prior_mean,
-                    prior_variance,
+                    prior_logvar,
                     embeddings[i][0],
                     embeddings[i][1],
                 )
                 log_z_total += log_z
                 prior_mean = posterior_mean
-                prior_variance = posterior_variance
+                prior_logvar = torch.log(posterior_variance)
 
             combined = {
                 "mean": posterior_mean,
-                "variance": posterior_variance.squeeze(-2),
+                "logvar": torch.log(posterior_variance.squeeze(-2)),
                 "log_z": log_z_total,
             }
         return combined
 
 
-def product_2_gaussians(mean1, variance1, mean2, variance2):
+def product_2_gaussians(mean1, logvar1, mean2, logvar2):
     if len(mean1.shape) == 1:
         mean1 = mean1.unsqueeze(0)
-    if len(variance1.shape) == 1:
-        variance1 = variance1.unsqueeze(0)
+    if len(logvar1.shape) == 1:
+        logvar1 = logvar1.unsqueeze(0)
     if len(mean2.shape) == 1:
         mean2 = mean2.unsqueeze(0)
-    if len(variance2.shape) == 1:
-        variance2 = variance2.unsqueeze(0)
-    variance1 = torch.exp(variance1)
-    variance2 = torch.exp(variance2)
+    if len(logvar2.shape) == 1:
+        logvar2 = logvar2.unsqueeze(0)
+    variance1 = torch.exp(logvar1)
+    variance2 = torch.exp(logvar2)
 
     target_mean = mean2
     target_variance = variance2
