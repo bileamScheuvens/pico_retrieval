@@ -58,6 +58,8 @@ class Combiner(L.LightningModule):
         for label in set(labels):
             current_embeds = [e for (e, e_l) in zip(embeds, labels) if e_l == label]
             intra_embed = self.intra_combiner(current_embeds)
+            if any(torch.isnan(intra_embed["logvar"])):
+                breakpoint()
             intra_embeds.append(
                 torch.stack((intra_embed["mean"], intra_embed["logvar"]))
             )
@@ -136,7 +138,7 @@ class MpcCombiner(L.LightningModule):
             prior_logvar = embeddings[0][1]
             log_z_total = log_z.to(self.device)
             for i in range(1, len(embeddings)):
-                posterior_mean, posterior_variance, log_z = product_2_gaussians(
+                posterior_mean, posterior_logvar, log_z = product_2_gaussians(
                     prior_mean,
                     prior_logvar,
                     embeddings[i][0],
@@ -144,11 +146,11 @@ class MpcCombiner(L.LightningModule):
                 )
                 log_z_total += log_z
                 prior_mean = posterior_mean
-                prior_logvar = torch.log(posterior_variance)
+                prior_logvar = posterior_logvar
 
             combined = {
                 "mean": posterior_mean,
-                "logvar": torch.log(posterior_variance.squeeze(-2)),
+                "logvar": posterior_logvar.squeeze(-2),
                 "log_z": log_z_total,
             }
         return combined
