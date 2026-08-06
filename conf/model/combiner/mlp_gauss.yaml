@@ -1,0 +1,6 @@
+defaults:
+  - base_combiner
+
+inter_agg: MLP
+intra_agg: GAUSSIAN
+use_prob_encoder: true

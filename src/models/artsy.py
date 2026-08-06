@@ -8,7 +8,7 @@ from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
 from src.models.pubmed_pico import PubMedPicoModel, PubMedPicoProjector
-from src.models.specter2 import SPECTER2Model
+from src.models.paper_embedders import PaperEmbedderFactory
 from src.utils.configs import ARTSYConfig
 
 
@@ -44,7 +44,7 @@ class ARTSY(L.LightningModule):
         self.pico_embed_type = self.pico_projector.embed_type
 
         # Paper branch components
-        self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
+        self.paper_embedder = PaperEmbedderFactory(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
         self.pico_combiner = Combiner(
             cfg.combiner,

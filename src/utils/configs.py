@@ -99,20 +99,28 @@ class PubMedPicoConfig:
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
 
 
-# TODO rename these more abstractly
+class PaperEmbedderClass(Enum):
+    SPECTER = "specter"
+    SPECTER2 = "specter2"
+
+
 @dataclass
 class PaperEmbedderConfig:
-    adapter: str
+    model_class: PaperEmbedderClass
     base_url: str
     text_embed_type: Optional[TextEmbedType]
     text_embedder: Optional[TextEmbedder]
     hidden_dim: int
-    max_len: int
     shared_dim: int
     use_prob_encoder: bool
+    adapter: Optional[str]
+    max_len: int = 512
+    frozen: bool = True
 
 
-cs.store(group="model/paper_embedder", name="base_specter2", node=PaperEmbedderConfig)
+cs.store(
+    group="model/paper_embedder", name="base_paper_embedder", node=PaperEmbedderConfig
+)
 
 
 class PicoAggType(Enum):
