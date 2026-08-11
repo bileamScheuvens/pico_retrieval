@@ -57,11 +57,19 @@ class SPECTERModel(PaperEmbedder):
 
         # load model
         self.specter = AutoModel.from_pretrained(cfg.base_url)
-        if cfg.frozen:
-            for p in self.specter.parameters():
-                p.requires_grad = False
+        self._batch_count = 0
+        if cfg.unfreeze_after != 0:
+            self.freeze_backbone()
         specter_out_dim = self.specter.config.hidden_size
         self.paper_head = self.init_head(specter_out_dim)
+
+    def freeze_backbone(self):
+        for p in self.specter.parameters():
+            p.requires_grad = False
+
+    def unfreeze_backbone(self):
+        for p in self.specter.parameters():
+            p.requires_grad = True
 
     def embed_batch(self, batch):
         inputs = self.tokenizer(
@@ -79,7 +87,12 @@ class SPECTERModel(PaperEmbedder):
         return output.last_hidden_state[:, 0, :]
 
     def forward(self, batch):
+        if self.batch_count == self.cfg.unfreeze_after:
+            self.unfreeze_backbone()
+        self._batch_count += 1
+
         doc_embeddings = self.embed_batch(batch)
+
         return self.paper_head(doc_embeddings)  # [B, shared_dim]
 
 

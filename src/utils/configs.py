@@ -115,7 +115,7 @@ class PaperEmbedderConfig:
     use_prob_encoder: bool
     adapter: Optional[str]
     max_len: int = 512
-    frozen: bool = True
+    unfreeze_after: int = -1  # frozen by default
 
 
 cs.store(

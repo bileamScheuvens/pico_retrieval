@@ -17,4 +17,4 @@ hydra:
   mode: MULTIRUN
   sweeper:
     params:
-      model.paper_embedder.frozen: true, false
+      model.paper_embedder.unfreeze_after: 500
