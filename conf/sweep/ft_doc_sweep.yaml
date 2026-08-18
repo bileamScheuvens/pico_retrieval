@@ -5,7 +5,7 @@ defaults:
   - override /model/paper_embedder: specter
 
 trainer:
-  max_time: "00:12:00:00"
+  max_time: "00:03:00:00"
 
 data:
   batch_size: 32

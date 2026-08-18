@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=8          # Number of CPU cores per task
 #SBATCH --nodes=1                  # Ensure that all cores are on the same machine with nodes=1
 #SBATCH --partition=2080-galvani   # Which partition will run your job
-#SBATCH --time=3-00:00             # Allowed runtime in D-HH:MM
+#SBATCH --time=1-00:00             # Allowed runtime in D-HH:MM
 #SBATCH --gres=gpu:1               # (optional) Requesting type and number of GPUs
 #SBATCH --mem=50G                  # Total memory pool for all cores (see also --mem-per-cpu); exceeding this number will cause your job to fail.
 #SBATCH --output=cluster/logs/sweep-%j.out       # File to which STDOUT will be written - make sure this is not on $HOME
@@ -27,4 +27,4 @@ nvidia-smi # only if you requested gpus
 
 # Compute Phase
 cd "$SLURM_SUBMIT_DIR"
-singularity exec --nv --env-file .env --bind $SLURM_SUBMIT_DIR:/workspace cluster/container.sif /bin/bash -c ". /venv/bin/activate && cd /workspace && python3 -m main data.batch_size=32 experiment_name=sweep model/paper_embedder=linear +sweep=lr_sweep"
+singularity exec --nv --env-file .env --bind $SLURM_SUBMIT_DIR:/workspace cluster/container.sif /bin/bash -c ". /venv/bin/activate && cd /workspace && python3 -m main experiment_name=sweep +sweep=ft_doc_sweep"
