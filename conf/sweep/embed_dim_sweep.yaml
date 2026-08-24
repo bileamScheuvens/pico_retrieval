@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - override /model/combiner: mlp_gauss
+
+trainer:
+  max_time: "00:06:00:00"
+
+data:
+  batch_size: 32
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model.paper_embedder.shared_dim: 64, 128, 256, 512
+
+model:
+  lr: 0.001
+  paper_embedder:
+    hidden_dim: "${eval: '${model.paper_embedder.shared_dim} * 2'}"
+  pico_extractor:
+    hidden_dim: "${eval: '${model.paper_embedder.shared_dim} * 2'}"
+    shared_dim: ${model.paper_embedder.shared_dim}
