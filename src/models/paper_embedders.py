@@ -87,7 +87,7 @@ class SPECTERModel(PaperEmbedder):
         return output.last_hidden_state[:, 0, :]
 
     def forward(self, batch):
-        if self.batch_count == self.cfg.unfreeze_after:
+        if self._batch_count == self.cfg.unfreeze_after:
             self.unfreeze_backbone()
         self._batch_count += 1
 
