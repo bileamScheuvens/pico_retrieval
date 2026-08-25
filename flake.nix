@@ -58,9 +58,11 @@
               pudb
               pytest
               sentence-transformers
+              sentence-transformers.optional-dependencies.image
               seqeval
               torch-geometric
               transformers
+              torchvision
               umap-learn
               wandb
               # (buildPythonPackage (finalAttrs: {
