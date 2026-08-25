@@ -1,0 +1,20 @@
+# @package _global_
+
+defaults:
+  - override /model/combiner: mlp_gauss
+  - override /model/pico_extractor: promptrep
+
+trainer:
+  max_time: "01:12:00:00"
+
+data:
+  batch_size: 32
+
+model:
+  lr: 0.001
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model.pico_extractor.text_embed_type: PROMPTREPS, SENTENCE
