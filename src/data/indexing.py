@@ -67,23 +67,21 @@ def eval_index_shard(model: ARTSY, index_name, shard_i, k_shards):
     faiss.write_index(index_shard, str(_shard_path(index_name, shard_i)))
 
 
-def eval_index_merge(index_name, k_shards):
+def eval_index_load(index_name, k_shards, clear=False):
     """Merge all shards into one index."""
     data_iter, n_documents = pubmed_iter()
-    BLOCKSIZE = math.ceil(n_documents / k_shards)
-    full_path = _index_path(index_name)
+    full_path = str(_index_path(index_name))
 
     # load if merged version exists
-    if os.path.exists(_index_path(full_path)):
+    if os.path.exists(full_path) and not clear:
         index = faiss.read_index(str(full_path))
     else:
         # otherwise load first shard and merge others
-        index = faiss.read_index(_shard_path(index_name, 0))
+        index = faiss.read_index(str(_shard_path(index_name, 0)))
 
         for shard_i in range(1, k_shards):
-            index_shard = faiss.read_index(_shard_path(index_name, shard_i))
-            # merge shard, apply offset
-            index.merge_from(index_shard, add_id=BLOCKSIZE * shard_i)
+            index_shard = faiss.read_index(str(_shard_path(index_name, shard_i)))
+            index.merge_from(index_shard)
         # write to disk
         faiss.write_index(index, full_path)
 

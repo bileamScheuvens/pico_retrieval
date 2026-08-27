@@ -163,6 +163,7 @@ class EvalMethods(Enum):
     DASH = "dash"
     PROBE = "probing"
     TRANSFER = "transfer"
+    SYSREV = "sysrev"
 
 
 @dataclass
@@ -172,7 +173,7 @@ class EvalConfig:
     experiment: Optional[dict]
     eval_method: EvalMethods
     index_name: str = "index"
-    k_shards: int = 8
+    k_shards: int = 16
     shard_i: Optional[int] = None
 
 
