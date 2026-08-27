@@ -2,7 +2,7 @@ from src.models.artsy import ARTSY
 from omegaconf import DictConfig
 from src.constants import CONFIGPATH
 import hydra
-from src.data.indexing import eval_index_merge, eval_index_shard
+from src.data.indexing import eval_index_shard
 
 
 @hydra.main(version_base=None, config_path=str(CONFIGPATH), config_name="eval")
