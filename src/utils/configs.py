@@ -163,6 +163,7 @@ class EvalMethods(Enum):
     DASH = "dash"
     PROBE = "probing"
     TRANSFER = "transfer"
+    SYSREV = "sysrev"
 
 
 @dataclass
@@ -172,6 +173,8 @@ class EvalConfig:
     experiment: Optional[dict]
     eval_method: EvalMethods
     index_name: str = "index"
+    k_shards: int = 16
+    shard_i: Optional[int] = None
 
 
 cs.store(name="base_eval", node=EvalConfig)

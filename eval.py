@@ -1,12 +1,14 @@
 import hydra
 from omegaconf import DictConfig
-
+from src.eval import (
+    eval_dash,
+    eval_ebm_nlp,
+    eval_probe,
+    eval_sysrev,
+    eval_transfer,
+    eval_visualisation,
+)
 from src.constants import CONFIGPATH
-from src.eval.eval_dash import eval_dash
-from src.eval.eval_ebm_nlp import eval_ebm_nlp
-from src.eval.eval_probe import eval_probe
-from src.eval.eval_visualisation import eval_visualisation
-from src.eval.eval_transfer import eval_transfer
 from src.utils.configs import EvalMethods
 
 
@@ -22,6 +24,8 @@ def eval(cfg: DictConfig):
         return eval_dash(cfg)
     if cfg.eval_method == EvalMethods.TRANSFER:
         return eval_transfer(cfg)
+    if cfg.eval_method == EvalMethods.SYSREV:
+        return eval_sysrev(cfg)
     raise NotImplementedError
 
 

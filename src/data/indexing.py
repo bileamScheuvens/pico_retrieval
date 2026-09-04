@@ -1,3 +1,4 @@
+import math
 import json
 import os
 from collections import defaultdict
@@ -8,15 +9,25 @@ import faiss
 import torch
 from tqdm import tqdm
 
-from src.constants import INDEXPATH
+from src.constants import INDEXPATH, SHARDPATH
 from src.data.load_data import ebm_iter, load_ebm, pubmed_iter
 from src.models import PicoExtractor
 from src.models.artsy import ARTSY
 
 
+def _shard_path(index_name, shard_i):
+    os.makedirs(SHARDPATH, exist_ok=True)
+    return SHARDPATH / f"{index_name}_shard_{shard_i}.faiss"
+
+
+def _index_path(index_name):
+    os.makedirs(INDEXPATH / "eval", exist_ok=True)
+    return INDEXPATH / "eval" / f"{index_name}.faiss"
+
+
 @torch.no_grad
-def build_eval_index(model: ARTSY, index_name, clear=False):
-    full_path = INDEXPATH / f"{index_name}.faiss"
+def build_ebm_index(model: ARTSY, index_name, clear=False):
+    full_path = _index_path(index_name + "_ebm")
     if os.path.exists(full_path) and not clear:
         index = faiss.read_index(str(full_path))
     else:
@@ -36,6 +47,50 @@ def build_eval_index(model: ARTSY, index_name, clear=False):
         index.add(model.embed_paper(title, abstract).numpy())  # ty:ignore[missing-argument]
         if i % 2500 == 0 or i == len(ebm_nlp) - 1:
             faiss.write_index(index, str(full_path))
+    return index, idx_to_pmid, pmid_to_content
+
+
+def eval_index_shard(model: ARTSY, index_name, shard_i, k_shards):
+    """Build shard <shard_i> from pubmed. Blockwise and atomic operation."""
+    data_iter, n_documents = pubmed_iter()
+    BLOCKSIZE = math.ceil(n_documents / k_shards)
+    shard_start = shard_i * BLOCKSIZE
+
+    index_shard = faiss.IndexFlatIP(model.cfg.paper_embedder.shared_dim)
+    for i, (pmid, title, abstract) in tqdm(
+        enumerate(data_iter), desc=f"Building shard {shard_i}.", total=n_documents
+    ):
+        # check if inside shard boundaries
+        if not shard_start <= i < shard_start + BLOCKSIZE:
+            continue
+        index_shard.add(model.embed_paper(title, abstract).numpy())  # ty:ignore[missing-argument]
+    faiss.write_index(index_shard, str(_shard_path(index_name, shard_i)))
+
+
+def eval_index_load(index_name, k_shards, clear=False):
+    """Merge all shards into one index."""
+    data_iter, n_documents = pubmed_iter()
+    full_path = str(_index_path(index_name))
+
+    # load if merged version exists
+    if os.path.exists(full_path) and not clear:
+        index = faiss.read_index(str(full_path))
+    else:
+        # otherwise load first shard and merge others
+        index = faiss.read_index(str(_shard_path(index_name, 0)))
+
+        for shard_i in range(1, k_shards):
+            index_shard = faiss.read_index(str(_shard_path(index_name, shard_i)))
+            index.merge_from(index_shard)
+        # write to disk
+        faiss.write_index(index, full_path)
+
+    # metadata for reverse mapping
+    idx_to_pmid = {}
+    pmid_to_content = {}
+    for i, (pmid, title, abstract) in enumerate(data_iter):
+        idx_to_pmid[i] = pmid
+        pmid_to_content[pmid] = (i, title, abstract)
     return index, idx_to_pmid, pmid_to_content
 
 

@@ -2,9 +2,9 @@ defaults:
   - base_model
   - pico_extractor: pubmed_pico
   - paper_embedder: specter2
-  - combiner: gaussian
+  - combiner: mlp_gauss
   - _self_
 
 lr: 5e-3
-l2_lambda: 1e-5
+l2_lambda: 1e-3
 temperature: 1

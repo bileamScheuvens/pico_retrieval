@@ -1,0 +1,5 @@
+# @package _global_
+index_name: hardneg_gauss
+
+model:
+  ckpt_path: checkpoints/hardneg_gauss_2000.ckpt

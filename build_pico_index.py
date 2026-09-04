@@ -6,12 +6,14 @@ from src.data.indexing import PICOIndex
 
 
 @hydra.main(version_base=None, config_path=str(CONFIGPATH), config_name="config")
-def prepare_index(cfg: DictConfig):
-    model = ARTSY(cfg.model)
+def build_pico_index(cfg: DictConfig):
+    model = ARTSY.load_from_checkpoint(
+        cfg.model.ckpt_path, weights_only=False, strict=False
+    )
     index = PICOIndex(model.pico_extractor)
     first_doc = list(index.pmid2idx["Patient"].keys())[0]
     index.get_similar_doc(first_doc)
 
 
 if __name__ == "__main__":
-    prepare_index()
+    build_pico_index()

@@ -44,7 +44,6 @@ class ARTSY(L.LightningModule):
         self.pico_embed_type = self.pico_projector.embed_type
 
         # Paper branch components
-<<<<<<< HEAD
         self.paper_embedder = PaperEmbedderFactory(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
         self.pico_combiner = Combiner(
@@ -52,11 +51,6 @@ class ARTSY(L.LightningModule):
             shared_dim=cfg.pico_extractor.shared_dim,
             use_prob_encoder=cfg.pico_extractor.use_prob_encoder,
         )
-=======
-        self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
-        self.paper_embed_type = self.paper_embedder.embed_type
-        self.pico_combiner = Combiner(cfg.combiner)
->>>>>>> main
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
             pico_embed_type=self.pico_embed_type,
@@ -113,11 +107,7 @@ class ARTSY(L.LightningModule):
             preds["paper_means"] = self.paper_embedder(texts)
 
         if self.pico_embed_type == "prob":
-<<<<<<< HEAD
             preds["pico_logvars"] = torch.stack(pico_agg["logvar"])
-=======
-            preds["pico_logvars"] = torch.stack(pico_agg["variance"])
->>>>>>> main
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
         return preds

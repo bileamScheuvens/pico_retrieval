@@ -6,5 +6,5 @@ extractor_model: PUBMEDBERT
 corpus: both
 n_candidates: 50
 n_subcandidates: 50
-n_anchors: 4
+n_anchors: 8
 n_per_anchor: 8

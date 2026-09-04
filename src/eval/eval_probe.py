@@ -2,7 +2,7 @@ import gradio as gr
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.data.indexing import build_eval_index
+from src.data.indexing import build_ebm_index
 from src.models.artsy import ARTSY
 
 
@@ -11,7 +11,7 @@ def eval_probe(cfg: DictConfig):
         cfg.model.ckpt_path, weights_only=False, strict=False
     )
     model.eval()
-    index, idx2pmid, pmid2content = build_eval_index(
+    index, idx2pmid, pmid2content = build_ebm_index(
         model, index_name=cfg.index_name, clear=False
     )
 
