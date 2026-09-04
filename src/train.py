@@ -33,11 +33,11 @@ def train_artsy(cfg: ExperimentConfig):
 
     model = ARTSY(cfg.model)
     datamodule = SciDocDatamodule(cfg.data)
-    # early stopping only once after 1000 batches
+    # early stopping only once after 1000 batches, otherwise 2 epochs (more if overfitting on purpose)
     patience = (
         int(1000 / cfg.trainer.val_check_interval)
         if cfg.trainer.val_check_interval
-        else 2
+        else 2 + cfg.trainer.overfit_batches * 1000
     )
     trainer = L.Trainer(
         **as_dict(cfg.trainer),
@@ -46,7 +46,7 @@ def train_artsy(cfg: ExperimentConfig):
         callbacks=[
             ModelCheckpoint(
                 dirpath=EXPERIMENT_DIR / "checkpoints",
-                every_n_train_steps=1000,
+                every_n_train_steps=250,
                 save_on_exception=True,
             ),
             EarlyStopping("val/loss", patience=patience),

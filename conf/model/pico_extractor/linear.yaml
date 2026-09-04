@@ -1,6 +1,4 @@
 defaults:
   - pubmed_pico
 
-text_embedder_url: neuml/pubmedbert-base-embeddings
-text_embed_type: SENTENCE
 use_prob_encoder: false

@@ -1,19 +1,17 @@
 from src.constants import MODELPATH
-from torch import nn
 import torch
 
 import onnxruntime as ort
 from transformers import AutoTokenizer
 
 from src.models import PaperEmbedder
-from src.models.prob_encoder import ProbabilisticEncoder
-from src.utils.configs import SPECTER2Config
+from src.models.model_heads import ProbabilisticEncoder, PointEncoder
+from src.utils.configs import PaperEmbedderConfig
 
 
 class SPECTER2Model(PaperEmbedder):
-    def __init__(self, cfg: SPECTER2Config):
-        super().__init__()
-        self.cfg = cfg
+    def __init__(self, cfg: PaperEmbedderConfig):
+        super().__init__(cfg)
         # load model and tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)
 
@@ -32,12 +30,14 @@ class SPECTER2Model(PaperEmbedder):
                 cfg.shared_dim,
             )
         else:
-            self.paper_head = nn.Sequential(
-                nn.Linear(self.specter_out_dim, cfg.hidden_dim),
-                nn.GELU(),
-                nn.LayerNorm(cfg.hidden_dim),
-                nn.Linear(cfg.hidden_dim, cfg.shared_dim),
+            self.paper_head = PointEncoder(
+                self.specter_out_dim,
+                cfg.hidden_dim,
+                cfg.shared_dim,
             )
+
+    def join_text(self, title, abstract):
+        return title + self.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
 
     @property
     def embed_type(self):

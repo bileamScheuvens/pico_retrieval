@@ -1,3 +1,4 @@
+from src.models.combiners import Combiner
 from collections import defaultdict
 
 import lightning as L
@@ -6,8 +7,7 @@ import torch
 from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
-from src.models.combiners import get_fitting_combiner
-from src.models.pubmed_pico import PubMedPicoModel
+from src.models.pubmed_pico import PubMedPicoModel, PubMedPicoProjector
 from src.models.specter2 import SPECTER2Model
 from src.utils.configs import ARTSYConfig
 
@@ -18,16 +18,24 @@ class ARTSY(L.LightningModule):
     def __init__(self, cfg=ARTSYConfig):
         super().__init__()
         self.cfg = cfg
-        self.pico_embedder = PubMedPicoModel(cfg.pico_extractor)
-        self.extract_pico = self.pico_embedder.extract_pico
-        self.pico_embed_type = self.pico_embedder.embed_type
+        self.strict_loading = False
+
+        # PICO branch components
+        self.pico_extractor = PubMedPicoModel(cfg.pico_extractor)
+        self.extract_pico = self.pico_extractor.extract_pico
+        self.pico_projector = PubMedPicoProjector(
+            cfg.pico_extractor, self.pico_extractor.embed_dim
+        )
+        self.pico_embed_type = self.pico_projector.embed_type
+
+        # Paper branch components
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
-        self.pico_combiner = get_fitting_combiner(embed_type=self.pico_embed_type)
+        self.pico_combiner = Combiner(cfg.combiner)
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
-            pico_extractor=self.pico_embedder,
-            paper_embedder=self.paper_embedder,
+            pico_embed_type=self.pico_embed_type,
+            paper_embed_type=self.paper_embed_type,
             temperature=1,
         )
         self.save_hyperparameters()
@@ -36,41 +44,51 @@ class ARTSY(L.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.cfg.lr)
 
     def join_text(self, title, abstract):
-        return title + self.paper_embedder.tokenizer.sep_token + abstract  # ty:ignore[unresolved-attribute]
+        return self.paper_embedder.join_text(title, abstract)
 
     @torch.no_grad
     def embed_query(self, pico):
-        pico_individual = self.pico_embedder.encode_pico(pico)
-        return self.pico_combiner(pico_individual).unsqueeze(0).cpu().numpy()
+        pico_individual, labels = self.pico_extractor.encode_pico(pico)
+        pico_projected = self.pico_projector(pico_individual)
+        means = self.pico_combiner(pico_projected, labels)["mean"]
+        return means.unsqueeze(0).cpu()
 
     @torch.no_grad()
     def embed_paper(self, title, abstract):
         paper_embed = self.paper_embedder(self.join_text(title, abstract))
-        return paper_embed.cpu().numpy()
+        return paper_embed.cpu()
 
     def forward(self, batch):
         # TODO support batching better
         texts = []
+        # aggregates combiner outputs (just mean or mean, var, log_z)
         pico_agg = defaultdict(list)
         for title, abstract in zip(*batch):
             text = self.join_text(title, abstract)
             texts.append(text)
-            pico_individual = self.pico_embedder(text)  # [n_pico_elements, shared_dim]
-            self.pico_combiner(pico_individual, agg=pico_agg)
+            pico_individual, pico_labels = self.pico_extractor(
+                text
+            )  # [n_pico_elements, shared_dim]
+            pico_projected = self.pico_projector(pico_individual)
+
+            combined = self.pico_combiner(pico_projected, pico_labels)
+            for k, v in combined.items():
+                pico_agg[k].append(v)
 
         preds = {
             "pico_means": torch.stack(pico_agg["mean"]),
         }
 
         if self.paper_embed_type == "prob":
-            paper_means, paper_variances = self.paper_embedder(texts)
-            preds["paper_means"] = paper_means
-            preds["paper_variances"] = paper_variances
+            paper_embedding = self.paper_embedder(texts)  # [B, 2, shared_dim]
+            preds["paper_means"] = paper_embedding[..., 0, :]
+            preds["paper_logvars"] = paper_embedding[..., 1, :]
+
         else:
             preds["paper_means"] = self.paper_embedder(texts)
 
         if self.pico_embed_type == "prob":
-            preds["pico_variances"] = torch.stack(pico_agg["variance"])
+            preds["pico_logvars"] = torch.stack(pico_agg["variance"])
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
         return preds
@@ -79,18 +97,18 @@ class ARTSY(L.LightningModule):
         self,
         paper_means,
         pico_means,
-        paper_variances=None,
-        pico_variances=None,
+        paper_logvars=None,
+        pico_logvars=None,
         pico_zs=None,
         prefix="train",
     ):
         # TODO bidirectional retrieval loss
         retrieval_loss, recall = self.retrieval_loss.forward(
             query=pico_means,
-            query_logsigma=pico_variances,
+            query_logsigma=pico_logvars,
             query_z=pico_zs,
             target=paper_means,
-            target_logsigma=paper_variances,
+            target_logsigma=paper_logvars,
             target_z=None,
             recall=True,
         )
@@ -99,10 +117,16 @@ class ARTSY(L.LightningModule):
             f"{prefix}/retrieval_loss": retrieval_loss,
             f"{prefix}/recall": recall,
         }
-        if pico_variances is not None:
-            l2_loss = self.cfg.l2_lambda * (pico_variances**2).sum()
-            metrics[f"{prefix}/l2_loss"] = l2_loss
-            loss += l2_loss
+        if pico_logvars is not None:
+            l2_pico = self.cfg.l2_lambda * ((pico_logvars) ** 2).mean()
+            metrics[f"{prefix}/l2_pico"] = l2_pico
+            metrics[f"{prefix}/mean_pico_var"] = pico_logvars.exp().mean()
+            loss += l2_pico
+        if paper_logvars is not None:
+            l2_paper = self.cfg.l2_lambda * ((paper_logvars) ** 2).mean()
+            metrics[f"{prefix}/l2_paper"] = l2_paper
+            metrics[f"{prefix}/mean_paper_var"] = paper_logvars.exp().mean()
+            loss += l2_paper
         metrics[f"{prefix}/loss"] = loss
         return metrics
 

@@ -2,4 +2,5 @@ defaults:
   - default
   - override pico_extractor: linear
   - override paper_embedder: linear
+  - override combiner: static
   - _self_

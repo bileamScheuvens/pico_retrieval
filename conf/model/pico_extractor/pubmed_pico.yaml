@@ -1,11 +1,10 @@
 defaults:
   - base_pubmed_pico
 base_url: microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract
-text_embedder_url: Qwen/Qwen2.5-1.5B-Instruct
-text_embed_type: PROMPTREPS
-# text_embedder_url: neuml/pubmedbert-base-embeddings
-# text_embed_type: SENTENCE
+text_embedder: PUBMEDBERT
+text_embed_type: SENTENCE
 use_prob_encoder: true
+pico_dropout: 0.2
 considered_elements:
   - Patient
   - Intervention

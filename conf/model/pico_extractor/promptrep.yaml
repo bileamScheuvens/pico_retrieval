@@ -1,0 +1,5 @@
+defaults:
+  - pubmed_pico
+
+text_embedder_url: QWEN
+text_embed_type: PROMPTREPS
