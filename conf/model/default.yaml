@@ -3,7 +3,6 @@ defaults:
   - pico_extractor: pubmed_pico
   - paper_embedder: specter2
   - combiner: mlp_gauss
-  - combiner: gaussian
   - _self_
 
 lr: 5e-3
