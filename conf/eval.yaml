@@ -2,6 +2,7 @@ defaults:
   - base_eval
   - model: default
   - data: default
+  - optional experiment: null
   - _self_
   - optional experiment: null
   - override hydra/hydra_logging: disabled
