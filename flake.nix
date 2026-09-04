@@ -5,7 +5,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
   outputs =
-    { self, nixpkgs }:
+    {
+      nixpkgs,
+    }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -14,7 +16,7 @@
         # config.allowBroken = true;
         config.cudaSupport = true;
       };
-      python = pkgs.python3.override {
+      python = pkgs.python313.override {
         packageOverrides = new: old: {
           umap-learn = old.umap-learn.overridePythonAttrs (oldAttrs: {
             doCheck = false;
@@ -37,9 +39,10 @@
               datasets
               dash
               openai
+              hydra-core
               faiss
               gradio
-              hydra-core
+              tabulate
               ipdb
               joblib
               kaleido
@@ -136,7 +139,6 @@
                 pname = "pytrec-eval";
                 version = "0.5";
                 format = "setuptools";
-                # pyproject = true;
                 __structuredAttrs = true;
 
                 src = fetchFromGitHub {
@@ -221,7 +223,7 @@
                 };
 
               })
-              (buildPythonPackage rec {
+              (buildPythonPackage {
                 pname = "NERDA";
                 version = "1.0.0";
                 format = "pyproject";
@@ -244,7 +246,7 @@
                   nltk
                   pandas
                   progressbar
-                  (buildPythonPackage rec {
+                  (buildPythonPackage {
                     pname = "pyconll";
                     version = "4.0.0";
                     format = "pyproject";
