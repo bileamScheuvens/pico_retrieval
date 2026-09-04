@@ -9,3 +9,4 @@ outputs/
 .gradio/
 multirun/
 transfer_*.json
+exports/*.pdf
