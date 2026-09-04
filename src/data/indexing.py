@@ -42,7 +42,7 @@ def build_eval_index(model: ARTSY, index_name, clear=False):
 class PICOIndex:
     """
     Index over all extracted pico elements, embedded with a language model. Implements set similarity:
-    sim(docA, docB) = mean(max_wrt_P(sim(docA, docB)), ...)
+    sim(docA, docB) = sum(mean(sim(docA_P, docB_P)), sim(docA_I, docB_I),...)
     """
 
     def __init__(
@@ -120,13 +120,15 @@ class PICOIndex:
             data = chain(ebm, pubmed)
             data_len = pubmed_len + ebm_len  # slightly wrong due to overlap
 
+        modified_index = False
         for i, (pmid, title, abstract) in tqdm(
             enumerate(data), desc="Building Index.", total=data_len
         ):
             if pmid in self.pmid2content:
                 continue
             self.pmid2content[pmid] = (title, abstract)
-            if self.extractor is None:
+            modified_index = True
+            if not hasattr(self, "extractor"):
                 raise ValueError("Incomplete Index but no extractor model provided.")
             text = self.extractor.join_text(title, abstract)  # ty:ignore[call-non-callable]
             # TODO check if keys are really
@@ -134,6 +136,9 @@ class PICOIndex:
                 self.add_sample(vec, pmid, label)
             if i % 500 == 0 or i == data_len - 1:
                 self.write_indices()
+
+        if modified_index:
+            self.write_indices()
 
     def add_sample(self, vec, pmid, pico_category):
         i = self.index[pico_category].ntotal

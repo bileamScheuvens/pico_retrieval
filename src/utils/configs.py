@@ -1,9 +1,10 @@
-from pathlib import Path
-from typing import Optional, Union
-from omegaconf import OmegaConf, DictConfig
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
 from hydra.core.config_store import ConfigStore
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import OmegaConf
 
 cs = ConfigStore()
 
@@ -55,6 +56,7 @@ class TrainerConfig:
     limit_train_batches: Optional[int] = None
     limit_val_batches: Optional[int] = None
     overfit_batches: int = 0
+    max_time: Optional[str] = None
 
 
 cs.store(group="trainer", name="base_trainer", node=TrainerConfig)
@@ -77,7 +79,8 @@ class TextEmbedType(Enum):
 
 class TextEmbedder(Enum):
     PUBMEDBERT = "neuml/pubmedbert-base-embeddings"
-    QWEN = "Qwen/Qwen2.5-1.5B-Instruct"
+    QWEN2 = "Qwen/Qwen2.5-1.5B-Instruct"
+    QWEN3 = "Qwen/Qwen3.5-0.8B"
 
 
 @dataclass
@@ -97,24 +100,31 @@ class PubMedPicoConfig:
 cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoConfig)
 
 
-# TODO rename these more abstractly
+class PaperEmbedderClass(Enum):
+    SPECTER = "specter"
+    SPECTER2 = "specter2"
+
+
 @dataclass
 class PaperEmbedderConfig:
-    adapter: str
+    model_class: PaperEmbedderClass
     base_url: str
     text_embed_type: Optional[TextEmbedType]
     text_embedder: Optional[TextEmbedder]
     hidden_dim: int
-    max_len: int
     shared_dim: int
     use_prob_encoder: bool
+    adapter: Optional[str]
+    max_len: int = 512
+    unfreeze_after: int = -1  # frozen by default
 
 
-cs.store(group="model/paper_embedder", name="base_specter2", node=PaperEmbedderConfig)
+cs.store(
+    group="model/paper_embedder", name="base_paper_embedder", node=PaperEmbedderConfig
+)
 
 
 class PicoAggType(Enum):
-    MEAN = "mean"
     SUM = "sum"
     ATTN = "attention"
     GAUSSIAN = "gaussian"
@@ -152,6 +162,7 @@ class EvalMethods(Enum):
     VIS = "visualisation"
     DASH = "dash"
     PROBE = "probing"
+    TRANSFER = "transfer"
 
 
 @dataclass
@@ -180,3 +191,13 @@ cs.store(name="experiment_config", node=ExperimentConfig)
 
 def as_dict(conf):
     return OmegaConf.to_container(conf, resolve=True)
+
+
+def get_wandb_names(cfg):
+    hc = HydraConfig.get()
+    if hc.sweeper.params is None:
+        return cfg.experiment_name, None
+    swept_params = hc.sweeper.params.keys()
+    group_name = "sweep_" + "_".join([x.split(".")[-1] for x in swept_params])
+    experiment_name = f"{group_name}-{'_'.join([str(OmegaConf.select(cfg, x)) for x in swept_params])}"
+    return experiment_name, group_name

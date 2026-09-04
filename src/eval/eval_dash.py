@@ -45,7 +45,7 @@ def eval_dash(cfg: DictConfig):
     datamodule = SciDocDatamodule(cfg.data)
     datamodule.setup("fit")
     val_data = datamodule.val_data
-    N = 128
+    N = 512
     titles = []
     paper_means = []
     picos = []

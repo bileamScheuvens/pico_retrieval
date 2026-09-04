@@ -1,21 +1,18 @@
 import os
 
 import lightning as L
-
-import wandb
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     ModelCheckpoint,
     TQDMProgressBar,
 )
+from lightning.pytorch.loggers import WandbLogger
 
-
+import wandb
 from src.constants import ROOT
 from src.data.scidocdata import SciDocDatamodule
-
-from lightning.pytorch.loggers import WandbLogger
 from src.models.artsy import ARTSY
-from src.utils.configs import ExperimentConfig, as_dict
+from src.utils.configs import ExperimentConfig, as_dict, get_wandb_names
 
 
 def train_artsy(cfg: ExperimentConfig):
@@ -24,8 +21,10 @@ def train_artsy(cfg: ExperimentConfig):
     os.makedirs(EXPERIMENT_DIR, exist_ok=True)
 
     # start trainer
+    experiment_name, group_name = get_wandb_names(cfg)
     run = wandb.init(
-        name=cfg.experiment_name,
+        name=experiment_name,
+        group=group_name,
         config=as_dict(cfg),
         project=cfg.logger.project,
         mode=cfg.logger.mode,  # ty:ignore[invalid-argument-type]
@@ -56,3 +55,8 @@ def train_artsy(cfg: ExperimentConfig):
 
     # train
     trainer.fit(model, datamodule, ckpt_path=cfg.model.ckpt_path, weights_only=False)
+    # cleanup (necessary for multirun)
+    wandb.finish()
+    del model
+    del trainer
+    del datamodule

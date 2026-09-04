@@ -1,0 +1,6 @@
+[submodule "scirepeval"]
+	path = scirepeval
+	url = git@github.com:allenai/scirepeval.git
+[submodule "src/submodules/scirepeval"]
+	path = src/submodules/scirepeval
+	url = git@github.com:allenai/scirepeval.git

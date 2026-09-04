@@ -6,3 +6,6 @@ outputs/
 *.ckpt
 .index/
 !.index/.gitkeep
+.gradio/
+multirun/
+transfer_*.json

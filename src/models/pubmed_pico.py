@@ -6,7 +6,6 @@ import torch
 import transformers
 from joblib import Memory
 from seqeval.metrics.sequence_labeling import get_entities
-from torch import nn
 
 from src.constants import CACHEPATH, MODELPATH
 from src.models import PicoExtractor, PicoProjector, TextEncoderFactory

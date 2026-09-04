@@ -24,18 +24,6 @@ class PicoProjector(L.LightningModule):
         pass
 
 
-class PaperEmbedder(L.LightningModule):
-    def __init__(self, cfg, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.cfg = cfg
-
-    @property
-    @abstractmethod
-    def embed_type(self) -> str:
-        """Must specify whether embedding type is point or probabilistic."""
-        pass
-
-
 def TextEncoderFactory(cfg):
     if cfg.text_embed_type == TextEmbedType.SENTENCE:
         return SentenceTransformerModel(cfg.text_embedder.value)

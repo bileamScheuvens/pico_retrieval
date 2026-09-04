@@ -1,9 +1,9 @@
 defaults:
   - base_data
-  - sampler: random
+  - sampler: hardnegative
   - _self_
 
-batch_size: 32
+batch_size: 128
 train_ratio: 0.9
 val_ratio: 0.1
 seed: 161

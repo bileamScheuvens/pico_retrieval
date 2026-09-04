@@ -8,8 +8,23 @@ from src.losses import get_fitting_criterion
 from src.metrics import mean_l2, mean_sim
 from src.metrics.plots import plot_means
 from src.models.pubmed_pico import PubMedPicoModel, PubMedPicoProjector
-from src.models.specter2 import SPECTER2Model
+from src.models.paper_embedders import PaperEmbedderFactory
 from src.utils.configs import ARTSYConfig
+
+
+class Dummy(L.LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.layer = torch.nn.Linear(5, 5)
+
+    def forward(self, batch):
+        pass
+
+    def training_step(self, batch, batch_idx):
+        return {"loss": torch.ones(1, requires_grad=True)}
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters())
 
 
 class ARTSY(L.LightningModule):
@@ -29,9 +44,19 @@ class ARTSY(L.LightningModule):
         self.pico_embed_type = self.pico_projector.embed_type
 
         # Paper branch components
+<<<<<<< HEAD
+        self.paper_embedder = PaperEmbedderFactory(cfg.paper_embedder)
+        self.paper_embed_type = self.paper_embedder.embed_type
+        self.pico_combiner = Combiner(
+            cfg.combiner,
+            shared_dim=cfg.pico_extractor.shared_dim,
+            use_prob_encoder=cfg.pico_extractor.use_prob_encoder,
+        )
+=======
         self.paper_embedder = SPECTER2Model(cfg.paper_embedder)
         self.paper_embed_type = self.paper_embedder.embed_type
         self.pico_combiner = Combiner(cfg.combiner)
+>>>>>>> main
         # get appropriate criterion depending on if embeddings are probabilistic
         self.retrieval_loss = get_fitting_criterion(
             pico_embed_type=self.pico_embed_type,
@@ -88,7 +113,11 @@ class ARTSY(L.LightningModule):
             preds["paper_means"] = self.paper_embedder(texts)
 
         if self.pico_embed_type == "prob":
+<<<<<<< HEAD
+            preds["pico_logvars"] = torch.stack(pico_agg["logvar"])
+=======
             preds["pico_logvars"] = torch.stack(pico_agg["variance"])
+>>>>>>> main
             preds["pico_zs"] = torch.stack(pico_agg["log_z"])
 
         return preds
