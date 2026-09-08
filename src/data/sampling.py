@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from random import choice
+from random import seed, choice
 from typing import TYPE_CHECKING
 
 from torch.utils.data import BatchSampler, Sampler, Subset, RandomSampler
@@ -13,6 +13,8 @@ from src.utils.configs import HardNegativeConfig, SamplerType
 
 
 def SamplerFactory(cfg, dataset):
+    seed(cfg.seed)
+
     if cfg.sampler.sampler_type == SamplerType.RANDOM:
         return BatchSampler(
             RandomSampler(dataset), batch_size=cfg.batch_size, drop_last=False

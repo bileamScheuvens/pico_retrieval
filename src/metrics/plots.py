@@ -1,3 +1,5 @@
+import json
+from src.constants import EXPORTPATH
 import torch
 from sklearn.preprocessing import MinMaxScaler
 import plotly.colors as pc
@@ -66,16 +68,23 @@ def plot_means_subsets(
 
 
 def plot_means_dash(
-    means_A: torch.Tensor, means_B: torch.Tensor, labels_A, labels_B, seed=161
+    means_A: torch.Tensor,
+    means_B: torch.Tensor,
+    labels_A,
+    labels_B,
+    selection_A,
+    selection_B,
+    cfg,
 ) -> go.Figure:
     num = len(labels_A)
     fig = go.Figure()
 
     def add_scatter(labels, coords, selector, symbol):
-        coords = umap.UMAP(n_components=2, random_state=seed).fit_transform(
+        coords = umap.UMAP(n_components=2, random_state=cfg.data.seed).fit_transform(
             coords.cpu().numpy()
         )
         coords = MinMaxScaler().fit_transform(coords)
+
         fig.add_scatter(
             x=coords[:, 0],
             y=coords[:, 1],
@@ -97,6 +106,17 @@ def plot_means_dash(
 
     coords_A = add_scatter(labels_A, means_A, "A", "diamond")
     coords_B = add_scatter(labels_B, means_B, "B", "asterisk")
+
+    # save to disk
+    for selection, coords, labels in zip(
+        [selection_A, selection_B], [coords_A, coords_B], [labels_A, labels_B]
+    ):
+        selection_str = "_".join(selection) if selection else []
+        filename = f"{cfg.index_name}_{selection_str}.json"
+        with (EXPORTPATH / "vis" / filename).open("w") as f:
+            json.dump(coords.tolist(), f)
+        with (EXPORTPATH / "labels" / filename).open("w") as f:
+            json.dump(labels, f)
 
     arrows = []
     arrow_colors = pc.sample_colorscale("Turbo", num)

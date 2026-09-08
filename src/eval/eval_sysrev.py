@@ -53,21 +53,44 @@ def eval_sysrev(cfg: DictConfig):
     grouped_df: pd.DataFrame = rcts.groupby(by="sysrev_id")["rank"].agg(
         ranks=list, count="count"
     )
+    grouped_df["Total Studies"] = grouped_df["count"] + (
+        df[df["rank"] == -1]
+        .groupby(by="sysrev_id")["rank"]
+        .count()
+        .reindex(grouped_df.index, fill_value=0)
+    )
 
     def average_precision(ranks):
-        """https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)"""
+        """https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval), adjusted for zero based indexing."""
         AP = 0
         for i, k in enumerate(sorted(ranks)):
-            AP += (i / k) / len(ranks)
+            AP += ((i + 1) / (k + 1)) / len(ranks)
         return AP
 
     grouped_df["AP"] = grouped_df["ranks"].apply(average_precision)
-    grouped_df["MRR"] = grouped_df["ranks"].apply(
-        lambda ranks: sum(1 / np.array(ranks)) / len(ranks)
+    grouped_df["First Hit"] = grouped_df["ranks"].apply(
+        lambda ranks: np.array(ranks).min() + 1
+    )
+    grouped_df["RR"] = grouped_df["First Hit"].apply(lambda rank: 1 / rank)
+    grouped_df["Last Hit"] = grouped_df["ranks"].apply(
+        lambda ranks: np.array(ranks).max() + 1
     )
 
+    # wrangling
+    grouped_df.rename(columns={"count": "RCTs", "sysrev_id": "SysRev ID"}, inplace=True)
+    grouped_df.index = grouped_df.index.astype("int")
+    grouped_df.sort_index(inplace=True)
+    grouped_df.reset_index(inplace=True)
+    grouped_df.style.hide(axis="index")
+        
+    grouped_df = grouped_df[ ["SysRev ID", "RCTs", "Total Studies", "AP", "RR", "First Hit", "Last Hit"]]
+
+    grouped_df.to_csv(EXPORTPATH / f"{cfg.index_name}_sysrev.csv", index=False)
+
     with (EXPORTPATH / f"{cfg.index_name}_sysrev.typ").open("w") as f:
-        grouped_df.drop(columns="ranks").style.to_typst(f)
+        grouped_df.style.hide(axis="index").to_typst(f)
+
     print(grouped_df)
     print(f"RCTs: {len(rcts)} of {len(df)}")
     print(f"MAP: {sum(grouped_df['AP']) / len(grouped_df):.6f}")
+    print(f"MRR: {sum(grouped_df['RR']) / len(grouped_df):.6f}")
