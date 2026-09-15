@@ -28,6 +28,7 @@ def train_artsy(cfg: ExperimentConfig):
         config=as_dict(cfg),
         project=cfg.logger.project,
         mode=cfg.logger.mode,  # ty:ignore[invalid-argument-type]
+        resume="allow",
     )
 
     model = ARTSY(cfg.model)
