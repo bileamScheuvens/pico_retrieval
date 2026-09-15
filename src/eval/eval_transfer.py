@@ -28,17 +28,17 @@ class SciRepModelWrapped(SciRepModel):
 
 
 def eval_transfer(cfg: DictConfig):
-    specter = SciRepModel(base_checkpoint="allenai/specter")
+    # specter = SciRepModel(base_checkpoint="allenai/specter")
     artsy = SciRepModelWrapped(cfg)
 
     task_file = ROOT / "src" / "submodules" / "scirepeval" / "scirepeval_tasks.jsonl"
     evaluator = SciRepEval(
         tasks_config=str(task_file),
         task_list=["DRSM", "Tweet Mentions", "RELISH"],
-        embedding_save_path=CACHEPATH / "transfer.pt",
+        # embedding_save_path=CACHEPATH / "transfer_.pt",
     )
 
     evaluator.evaluate(
         artsy, str(EXPORTPATH / "transfer" / f"transfer_{cfg.index_name}.json")
     )
-    evaluator.evaluate(specter, str(EXPORTPATH / "transfer" / "transfer_specter.json"))
+    # evaluator.evaluate(specter, str(EXPORTPATH / "transfer" / "transfer_specter.json"))

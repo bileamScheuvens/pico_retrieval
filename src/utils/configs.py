@@ -103,12 +103,13 @@ cs.store(group="model/pico_extractor", name="base_pubmed_pico", node=PubMedPicoC
 class PaperEmbedderClass(Enum):
     SPECTER = "specter"
     SPECTER2 = "specter2"
+    PLAIN = "plain"
 
 
 @dataclass
 class PaperEmbedderConfig:
     model_class: PaperEmbedderClass
-    base_url: str
+    base_url: Optional[str]
     text_embed_type: Optional[TextEmbedType]
     text_embedder: Optional[TextEmbedder]
     hidden_dim: int

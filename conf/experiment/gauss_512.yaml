@@ -1,0 +1,5 @@
+# @package _global_
+index_name: gauss_512
+
+model:
+  ckpt_path: checkpoints/gauss_512.ckpt

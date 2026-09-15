@@ -1,3 +1,4 @@
+from src.models import TextEncoderFactory
 from typing import TYPE_CHECKING
 
 import lightning as L
@@ -18,13 +19,20 @@ def PaperEmbedderFactory(cfg: PaperEmbedderConfig):
         return SPECTER2Model(cfg)
     if cfg.model_class == PaperEmbedderClass.SPECTER:
         return SPECTERModel(cfg)
+    if cfg.model_class == PaperEmbedderClass.PLAIN:
+        return PlainEmbedder(cfg)
 
 
 class PaperEmbedder(L.LightningModule):
     def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cfg = cfg
-        self.tokenizer: Tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)
+        if "base_url" in cfg:
+            self.tokenizer: Tokenizer = AutoTokenizer.from_pretrained(cfg.base_url)
+        else:
+            self.tokenizer: Tokenizer = AutoTokenizer.from_pretrained(
+                cfg.text_embedder.value
+            )
 
     def init_head(self, in_dim):
         if self.cfg.use_prob_encoder:
@@ -126,3 +134,16 @@ class SPECTER2Model(PaperEmbedder):
     def forward(self, batch):
         doc_embeddings = self.embed_batch(batch)
         return self.paper_head(doc_embeddings)  # [B, shared_dim]
+
+
+class PlainEmbedder(PaperEmbedder):
+    def __init__(self, cfg: PaperEmbedderConfig):
+        super().__init__(cfg)
+        self.text_encoder = TextEncoderFactory(cfg)
+        self.paper_head = self.init_head(self.text_encoder.embed_dim)
+
+    def forward(self, batch):
+        doc_embeddings = []
+        for doc in batch:
+            doc_embeddings.append(self.text_encoder(doc))
+        return self.paper_head(torch.stack(doc_embeddings))  # [B, shared_dim]
