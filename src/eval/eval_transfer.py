@@ -3,7 +3,7 @@ from omegaconf import DictConfig
 from src.models.artsy import ARTSY
 from src.submodules import SciRepEval, SciRepModel
 
-from src.constants import ROOT, CACHEPATH
+from src.constants import ROOT, CACHEPATH, EXPORTPATH
 
 
 class SciRepModelWrapped(SciRepModel):
@@ -12,6 +12,7 @@ class SciRepModelWrapped(SciRepModel):
         self.model = ARTSY.load_from_checkpoint(
             cfg.model.ckpt_path, weights_only=False, strict=False
         )
+        self.model.eval()
 
     def __call__(self, batch, batch_ids=None):
         batch = [batch] if type(batch) == str else batch
@@ -33,10 +34,11 @@ def eval_transfer(cfg: DictConfig):
     task_file = ROOT / "src" / "submodules" / "scirepeval" / "scirepeval_tasks.jsonl"
     evaluator = SciRepEval(
         tasks_config=str(task_file),
-        task_list=["Biomimicry", "DRSM"],
+        task_list=["DRSM", "Tweet Mentions", "RELISH"],
         embedding_save_path=CACHEPATH / "transfer.pt",
     )
 
-    evaluator.evaluate(artsy, f"transfer_{cfg.index_name}.json")
-    for name, model in zip(["artsy", "specter"], [artsy, specter]):
-        evaluator.evaluate(model, f"transfer_{name}.json")
+    evaluator.evaluate(
+        artsy, str(EXPORTPATH / "transfer" / f"transfer_{cfg.index_name}.json")
+    )
+    evaluator.evaluate(specter, str(EXPORTPATH / "transfer" / "transfer_specter.json"))

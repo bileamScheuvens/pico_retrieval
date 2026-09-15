@@ -12,6 +12,8 @@ eval_method: VIS
 
 model:
   ckpt_path: checkpoints/bigbatch3000.ckpt
+  pico_extractor:
+    cache_extraction: true
 
 hydra:
   output_subdir: null

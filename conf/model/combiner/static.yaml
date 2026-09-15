@@ -1,5 +1,5 @@
 defaults:
   - base_combiner
 
+intra_agg: SUM
 inter_agg: SUM
-intra_agg: HADAMARD

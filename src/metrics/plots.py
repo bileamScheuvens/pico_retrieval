@@ -75,12 +75,13 @@ def plot_means_dash(
     selection_A,
     selection_B,
     cfg,
+    **kwargs,
 ) -> go.Figure:
     num = len(labels_A)
     fig = go.Figure()
 
     def add_scatter(labels, coords, selector, symbol):
-        coords = umap.UMAP(n_components=2, random_state=cfg.data.seed).fit_transform(
+        coords = umap.UMAP(random_state=cfg.data.seed, **kwargs).fit_transform(
             coords.cpu().numpy()
         )
         coords = MinMaxScaler().fit_transform(coords)
@@ -108,15 +109,19 @@ def plot_means_dash(
     coords_B = add_scatter(labels_B, means_B, "B", "asterisk")
 
     # save to disk
-    for selection, coords, labels in zip(
-        [selection_A, selection_B], [coords_A, coords_B], [labels_A, labels_B]
-    ):
-        selection_str = "_".join(selection) if selection else []
-        filename = f"{cfg.index_name}_{selection_str}.json"
-        with (EXPORTPATH / "vis" / filename).open("w") as f:
-            json.dump(coords.tolist(), f)
-        with (EXPORTPATH / "labels" / filename).open("w") as f:
-            json.dump(labels, f)
+    def _clean_selection(selection):
+        if not selection:
+            return "DOC"
+        return "".join([x[:1] for x in selection])
+
+    clean_A = _clean_selection(selection_A)
+    clean_B = _clean_selection(selection_B)
+    filename = f"{cfg.index_name}_{len(coords_A)}_{clean_A}_{clean_B}.json"
+    with (EXPORTPATH / "vis" / filename).open("w") as f:
+        json.dump({clean_A: coords_A.tolist(), clean_B: coords_B.tolist()}, f)
+
+    with (EXPORTPATH / "labels" / filename).open("w") as f:
+        json.dump({clean_A: labels_A, clean_B: labels_B}, f)
 
     arrows = []
     arrow_colors = pc.sample_colorscale("Turbo", num)

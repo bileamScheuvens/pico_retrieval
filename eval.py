@@ -24,6 +24,8 @@ def eval(cfg: DictConfig):
         return eval_dash(cfg)
     if cfg.eval_method == EvalMethods.TRANSFER:
         return eval_transfer(cfg)
+    if cfg.eval_method == EvalMethods.SYSREV_SEED:
+        return eval_sysrev(cfg, from_seed=True)
     if cfg.eval_method == EvalMethods.SYSREV:
         return eval_sysrev(cfg)
     raise NotImplementedError

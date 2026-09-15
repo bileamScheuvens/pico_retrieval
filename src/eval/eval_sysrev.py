@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 
 import numpy as np
@@ -9,7 +10,7 @@ from src.data.indexing import eval_index_load
 from src.models.artsy import ARTSY
 
 
-def eval_sysrev(cfg: DictConfig):
+def eval_sysrev(cfg: DictConfig, from_seed=False):
 
     SYSREV_PATH = DATAPATH / "sysrev-seed-collection"
     with (SYSREV_PATH / "overall_collection.jsonl").open(encoding="utf-8") as f:
@@ -18,18 +19,36 @@ def eval_sysrev(cfg: DictConfig):
     with (SYSREV_PATH / "pico_search.json").open(encoding="utf-8") as f:
         pico_queries = json.load(f)
 
+    seed_suffix = "seed_" if from_seed else ""
+
     index, idx2pmid, pmid2content = eval_index_load(cfg.index_name, cfg.k_shards)
+
     model = ARTSY.load_from_checkpoint(cfg.model.ckpt_path, weights_only=False)
     model.eval()
 
-    def _evaluate_gold(id, included_studies):
-        pico = {}
-        for category in ["Population", "Intervention", "Comparator", "Outcome"]:
-            pico[category] = pico_queries[id][category].split("|")
+    def _extract_from_seed(seed_studies):
+        seed_pico = defaultdict(lambda: [model.pico_extractor.MISSING_TOKEN])
+        for seed in seed_studies:
+            if seed not in pmid2content:
+                continue
+            _, title, abstract = pmid2content[seed]
+            seed_pico.update(model.extract_pico(model.join_text(title, abstract)))
+        return seed_pico
 
-        # handle extractor specific vocab
-        pico["Patient"] = pico["Population"]
-        pico["Control"] = pico["Comparator"]
+    def _evaluate_gold(id, included_studies, seed_studies):
+
+        ### create query from combined seed study pico ###
+        if from_seed:
+            pico = _extract_from_seed(seed_studies)
+        ### handwritten query from search title ###
+        else:
+            pico = {}
+            for category in ["Population", "Intervention", "Comparator", "Outcome"]:
+                pico[category] = pico_queries[id][category].split("|")
+
+            # handle extractor specific vocab
+            pico["Patient"] = pico["Population"]
+            pico["Control"] = pico["Comparator"]
 
         pico_embed = model.embed_query(pico).numpy()
         sim, ranks = index.search(pico_embed, index.ntotal)
@@ -45,7 +64,9 @@ def eval_sysrev(cfg: DictConfig):
 
     rows = []
     for gold in sysrev_collection:
-        rows += _evaluate_gold(gold["id"], gold["included_studies"])
+        rows += _evaluate_gold(
+            gold["id"], gold["included_studies"], gold["seed_studies"]
+        )
 
     df = pd.DataFrame(rows)
 
@@ -77,18 +98,30 @@ def eval_sysrev(cfg: DictConfig):
     )
 
     # wrangling
-    grouped_df.rename(columns={"count": "RCTs", "sysrev_id": "SysRev ID"}, inplace=True)
     grouped_df.index = grouped_df.index.astype("int")
     grouped_df.sort_index(inplace=True)
     grouped_df.reset_index(inplace=True)
-    grouped_df.style.hide(axis="index")
-        
-    grouped_df = grouped_df[ ["SysRev ID", "RCTs", "Total Studies", "AP", "RR", "First Hit", "Last Hit"]]
+    grouped_df.rename(columns={"count": "RCTs", "sysrev_id": "SysRev ID"}, inplace=True)
 
-    grouped_df.to_csv(EXPORTPATH / f"{cfg.index_name}_sysrev.csv", index=False)
+    grouped_df = grouped_df[
+        ["SysRev ID", "RCTs", "Total Studies", "AP", "RR", "First Hit", "Last Hit"]
+    ]
 
-    with (EXPORTPATH / f"{cfg.index_name}_sysrev.typ").open("w") as f:
+    # first and last hit for all studies
+    grouped_df.to_csv(
+        EXPORTPATH / f"{cfg.index_name}_{seed_suffix}sysrev.csv", index=False
+    )
+
+    # table for appendix
+    with (EXPORTPATH / f"{cfg.index_name}_{seed_suffix}sysrev.typ").open("w") as f:
         grouped_df.style.hide(axis="index").to_typst(f)
+
+    # raw ranks
+    np.savetxt(
+        EXPORTPATH / f"{cfg.index_name}_{seed_suffix}sysrev_ranks.csv",
+        rcts["rank"].values,
+        delimiter=",",
+    )
 
     print(grouped_df)
     print(f"RCTs: {len(rcts)} of {len(df)}")
