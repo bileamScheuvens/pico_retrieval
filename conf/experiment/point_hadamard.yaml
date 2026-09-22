@@ -1,0 +1,5 @@
+# @package _global_
+index_name: point_hadamard
+
+model:
+  ckpt_path: checkpoints/point_hadamard.ckpt

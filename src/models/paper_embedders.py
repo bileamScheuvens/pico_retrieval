@@ -144,6 +144,9 @@ class PlainEmbedder(PaperEmbedder):
 
     def forward(self, batch):
         doc_embeddings = []
-        for doc in batch:
-            doc_embeddings.append(self.text_encoder(doc))
+        if isinstance(batch, str):
+            doc_embeddings.append(self.text_encoder(batch))
+        else:
+            for doc in batch:
+                doc_embeddings.append(self.text_encoder(doc))
         return self.paper_head(torch.stack(doc_embeddings))  # [B, shared_dim]

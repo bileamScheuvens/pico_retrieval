@@ -1,0 +1,5 @@
+# @package _global_
+index_name: point
+
+model:
+  ckpt_path: checkpoints/point.ckpt
