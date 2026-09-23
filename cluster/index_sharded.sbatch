@@ -28,4 +28,4 @@ nvidia-smi # only if you requested gpus
 
 # Compute Phase
 cd "$SLURM_SUBMIT_DIR"
-singularity exec --nv --env-file .env --bind $SLURM_SUBMIT_DIR:/workspace cluster/container.sif /bin/bash -c ". /venv/bin/activate && cd /workspace && python3 -m build_eval_index experiment=hardneg_2500 shard_i=$SLURM_ARRAY_TASK_ID k_shards=$((SLURM_ARRAY_TASK_MAX+1))"
+singularity exec --nv --env-file .env --bind $SLURM_SUBMIT_DIR:/workspace cluster/container.sif /bin/bash -c ". /venv/bin/activate && cd /workspace && python3 -m build_eval_index experiment=gauss_512 shard_i=$SLURM_ARRAY_TASK_ID k_shards=$((SLURM_ARRAY_TASK_MAX+1))"
