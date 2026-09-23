@@ -1,9 +1,8 @@
-import math
 import json
+import math
 import os
 from collections import defaultdict
 from itertools import chain
-from typing import Optional
 
 import faiss
 import torch
@@ -44,7 +43,7 @@ def build_ebm_index(model: ARTSY, index_name, clear=False):
         pmid_to_content[pmid] = (i, title, abstract)
         if i < index_size:
             continue
-        index.add(model.embed_paper(title, abstract).numpy())  # ty:ignore[missing-argument]
+        index.add(model.embed_paper(title, abstract).numpy())
         if i % 2500 == 0 or i == len(ebm_nlp) - 1:
             faiss.write_index(index, str(full_path))
     return index, idx_to_pmid, pmid_to_content
@@ -63,7 +62,7 @@ def eval_index_shard(model: ARTSY, index_name, shard_i, k_shards):
         # check if inside shard boundaries
         if not shard_start <= i < shard_start + BLOCKSIZE:
             continue
-        index_shard.add(model.embed_paper(title, abstract).numpy())  # ty:ignore[missing-argument]
+        index_shard.add(model.embed_paper(title, abstract).numpy())
     faiss.write_index(index_shard, str(_shard_path(index_name, shard_i)))
 
 
@@ -102,8 +101,8 @@ class PICOIndex:
 
     def __init__(
         self,
-        extractor: Optional[PicoExtractor] = None,
-        model_name: Optional[str] = None,
+        extractor: PicoExtractor | None = None,
+        model_name: str | None = None,
         corpus="both",
         n_candidates=50,
         n_subcandidates=50,
@@ -158,7 +157,7 @@ class PICOIndex:
             idx_to_pmid = json.load(legend_path.open())
             pmid_to_idx = defaultdict(list, json.load(legend_inv_path.open()))
         else:
-            index = faiss.IndexFlatIP(self.dim)
+            index = faiss.IndexFlatIP(self.dim)  # ty: ignore[invalid-argument-type]
             idx_to_pmid = {}
             pmid_to_idx = defaultdict(list)
         return index, idx_to_pmid, pmid_to_idx

@@ -21,7 +21,7 @@ class MpcRetrievalLoss(L.LightningModule):
         target_z,
         reduction="mean",
         recall=False,
-        n_samples=10,
+        n_samples=7,
         **kwargs,
     ):
 
