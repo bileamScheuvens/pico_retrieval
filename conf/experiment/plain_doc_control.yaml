@@ -1,0 +1,5 @@
+# @package _global_
+index_name: plain_doc_control
+
+model:
+  ckpt_path: checkpoints/plain_doc_control.ckpt

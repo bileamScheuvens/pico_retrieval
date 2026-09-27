@@ -1,8 +1,9 @@
+from src.constants import EXPORTPATH
 import gradio as gr
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.data.indexing import build_ebm_index, eval_index_load
+from src.data.indexing import eval_index_load
 from src.models.artsy import ARTSY
 
 
@@ -30,11 +31,14 @@ def eval_probe(cfg: DictConfig):
             idx, title, abstract = pmid2content[pmid]
             # model.extract_pico(model.join_text(title, abstract))
 
-            res.append((sim.round(3), rank, title, abstract))
+            res.append((sim.round(3), pmid, title, abstract))
         return pd.DataFrame(
             data=res,
             columns=["Similarity", "PMID", "Title", "Abstract"],  # ty:ignore[invalid-argument-type]
         )
+
+    def _save(df):
+        df.to_csv(EXPORTPATH / "demo.csv", index=False)
 
     with gr.Blocks() as demo:
         gr.Markdown("## CoPPeR inference")
@@ -44,8 +48,13 @@ def eval_probe(cfg: DictConfig):
             i = gr.Textbox(label="Intervention")
             c = gr.Textbox(label="Comparator")
             o = gr.Textbox(label="Outcome")
-            submit = gr.Button("Search", variant="primary")
+
+            with gr.Row():
+                submit = gr.Button("Search", variant="primary")
+                save = gr.DownloadButton("Save results")
+
             df = gr.DataFrame(wrap=False, label="Results")
         submit.click(fn=_predict, inputs=[p, i, c, o], outputs=df)
+        save.click(fn=_save, inputs=df)
 
     demo.launch(share=True)

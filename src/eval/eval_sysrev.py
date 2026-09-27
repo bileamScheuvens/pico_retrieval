@@ -96,6 +96,18 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
     grouped_df["Last Hit"] = grouped_df["ranks"].apply(
         lambda ranks: np.array(ranks).max() + 1
     )
+    grouped_df["R@10"] = grouped_df["ranks"].apply(
+        lambda rank: np.mean(np.array(rank) < 10)
+    )
+    grouped_df["R@100"] = grouped_df["ranks"].apply(
+        lambda rank: np.mean(np.array(rank) < 100)
+    )
+    grouped_df["R@1000"] = grouped_df["ranks"].apply(
+        lambda rank: np.mean(np.array(rank) < 1000)
+    )
+    grouped_df["R@10000"] = grouped_df["ranks"].apply(
+        lambda rank: np.mean(np.array(rank) < 10000)
+    )
 
     # wrangling
     grouped_df.index = grouped_df.index.astype("int")
@@ -104,7 +116,19 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
     grouped_df.rename(columns={"count": "RCTs", "sysrev_id": "SysRev ID"}, inplace=True)
 
     grouped_df = grouped_df[
-        ["SysRev ID", "RCTs", "Total Studies", "AP", "RR", "First Hit", "Last Hit"]
+        [
+            "SysRev ID",
+            "RCTs",
+            "Total Studies",
+            "AP",
+            "RR",
+            "First Hit",
+            "Last Hit",
+            "R@10",
+            "R@100",
+            "R@1000",
+            "R@10000",
+        ]
     ]
 
     # first and last hit for all studies
@@ -122,6 +146,19 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
         rcts["rank"].values,
         delimiter=",",
     )
+    metrics = json.load((EXPORTPATH / "sysrev_metrics.json").open())
+    model_name = f"{cfg.index_name}_{seed_suffix}"[:-1]
+
+    metrics[model_name] = {
+        "MAP": f"{grouped_df['AP'].mean():.3f}",
+        "MRR": f"{grouped_df['RR'].mean():.3f}",
+        "R@10": f"{grouped_df['R@10'].mean():.3f}",
+        "R@100": f"{grouped_df['R@100'].mean():.3f}",
+        "R@1k": f"{grouped_df['R@1000'].mean():.3f}",
+        "R@10k": f"{grouped_df['R@10000'].mean():.3f}",
+    }
+
+    json.dump(metrics, (EXPORTPATH / "sysrev_metrics.json").open("w"))
 
     print(grouped_df)
     print(f"RCTs: {len(rcts)} of {len(df)}")

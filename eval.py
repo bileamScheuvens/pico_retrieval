@@ -1,5 +1,7 @@
 import hydra
 from omegaconf import DictConfig
+
+from src.constants import CONFIGPATH
 from src.eval import (
     eval_dash,
     eval_ebm_nlp,
@@ -7,8 +9,8 @@ from src.eval import (
     eval_sysrev,
     eval_transfer,
     eval_visualisation,
+    eval_time_demo,
 )
-from src.constants import CONFIGPATH
 from src.utils.configs import EvalMethods
 
 
@@ -28,6 +30,8 @@ def eval(cfg: DictConfig):
         return eval_sysrev(cfg, from_seed=True)
     if cfg.eval_method == EvalMethods.SYSREV:
         return eval_sysrev(cfg)
+    if cfg.eval_method == EvalMethods.TIME:
+        return eval_time_demo(cfg)
     raise NotImplementedError
 
 
