@@ -130,6 +130,15 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
             "R@10000",
         ]
     ]
+    bool_query_results = pd.read_csv(
+        DATAPATH / "sysrev-seed-collection" / "candidate_documents.res",
+        names=["SysRev ID", "Boolean Candidates", "pmid", "2", "3", "4"],
+        delimiter=" ",
+    )
+    bool_query_results = bool_query_results.groupby("SysRev ID").count()[
+        "Boolean Candidates"
+    ]
+    grouped_df = grouped_df.join(bool_query_results, on="SysRev ID")
 
     # first and last hit for all studies
     grouped_df.to_csv(
