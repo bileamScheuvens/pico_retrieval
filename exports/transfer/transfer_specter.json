@@ -1,0 +1,27 @@
+{
+    "DRSM": {
+        "complete": {
+            "f1_macro": 77.58
+        },
+        "few_shot": [
+            {
+                "sample_size": 64,
+                "results": {
+                    "f1_macro": 61.0656
+                }
+            },
+            {
+                "sample_size": 24,
+                "results": {
+                    "f1_macro": 48.880700000000004
+                }
+            }
+        ]
+    },
+    "Tweet Mentions": {
+        "kendalltau": 27.72
+    },
+    "RELISH": {
+        "ndcg": 90.07
+    }
+}

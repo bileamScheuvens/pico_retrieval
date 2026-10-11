@@ -166,6 +166,7 @@ class EvalMethods(Enum):
     TRANSFER = "transfer"
     SYSREV = "sysrev"
     SYSREV_SEED = "sysrev_seed"
+    TIME = "time_demo"
 
 
 @dataclass

@@ -1,0 +1,3 @@
+name,val/loss,val/recall
+random,4.018,0.757
+hardnegative,0.483,0.872
