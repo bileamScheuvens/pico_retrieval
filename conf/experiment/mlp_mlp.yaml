@@ -1,0 +1,5 @@
+# @package _global_
+index_name: recomp_mlp_mlp
+
+model:
+  ckpt_path: checkpoints/mlp_mlp.ckpt

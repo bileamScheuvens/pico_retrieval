@@ -1,5 +1,5 @@
-from collections import defaultdict
 import json
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,7 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
 
     seed_suffix = "seed_" if from_seed else ""
 
-    index, idx2pmid, pmid2content = eval_index_load(cfg.index_name, cfg.k_shards)
+    index, _idx2pmid, pmid2content = eval_index_load(cfg.index_name, cfg.k_shards)
 
     model = ARTSY.load_from_checkpoint(cfg.model.ckpt_path, weights_only=False)
     model.eval()
@@ -51,7 +51,7 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
             pico["Control"] = pico["Comparator"]
 
         pico_embed = model.embed_query(pico).numpy()
-        sim, ranks = index.search(pico_embed, index.ntotal)
+        _, ranks = index.search(pico_embed, index.ntotal)
 
         rows = []
         for study in included_studies:
@@ -96,16 +96,16 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
     grouped_df["Last Hit"] = grouped_df["ranks"].apply(
         lambda ranks: np.array(ranks).max() + 1
     )
-    grouped_df["R@10"] = grouped_df["ranks"].apply(
+    grouped_df[r"R\@10"] = grouped_df["ranks"].apply(
         lambda rank: np.mean(np.array(rank) < 10)
     )
-    grouped_df["R@100"] = grouped_df["ranks"].apply(
+    grouped_df[r"R\@100"] = grouped_df["ranks"].apply(
         lambda rank: np.mean(np.array(rank) < 100)
     )
-    grouped_df["R@1000"] = grouped_df["ranks"].apply(
+    grouped_df[r"R\@1k"] = grouped_df["ranks"].apply(
         lambda rank: np.mean(np.array(rank) < 1000)
     )
-    grouped_df["R@10000"] = grouped_df["ranks"].apply(
+    grouped_df[r"R\@10k"] = grouped_df["ranks"].apply(
         lambda rank: np.mean(np.array(rank) < 10000)
     )
 
@@ -124,20 +124,18 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
             "RR",
             "First Hit",
             "Last Hit",
-            "R@10",
-            "R@100",
-            "R@1000",
-            "R@10000",
+            r"R\@10",
+            r"R\@100",
+            r"R\@1k",
+            r"R\@10k",
         ]
     ]
     bool_query_results = pd.read_csv(
         DATAPATH / "sysrev-seed-collection" / "candidate_documents.res",
-        names=["SysRev ID", "Boolean Candidates", "pmid", "2", "3", "4"],
+        names=["SysRev ID", "Boolean Pool", "pmid", "2", "3", "4"],
         delimiter=" ",
     )
-    bool_query_results = bool_query_results.groupby("SysRev ID").count()[
-        "Boolean Candidates"
-    ]
+    bool_query_results = bool_query_results.groupby("SysRev ID").count()["Boolean Pool"]
     grouped_df = grouped_df.join(bool_query_results, on="SysRev ID")
 
     # first and last hit for all studies
@@ -161,10 +159,10 @@ def eval_sysrev(cfg: DictConfig, from_seed=False):
     metrics[model_name] = {
         "MAP": f"{grouped_df['AP'].mean():.3f}",
         "MRR": f"{grouped_df['RR'].mean():.3f}",
-        "R@10": f"{grouped_df['R@10'].mean():.3f}",
-        "R@100": f"{grouped_df['R@100'].mean():.3f}",
-        "R@1k": f"{grouped_df['R@1000'].mean():.3f}",
-        "R@10k": f"{grouped_df['R@10000'].mean():.3f}",
+        r"R\@10": f"{grouped_df[r'R\@10'].mean():.3f}",
+        r"R\@100": f"{grouped_df[r'R\@100'].mean():.3f}",
+        r"R\@1k": f"{grouped_df[r'R\@1k'].mean():.3f}",
+        r"R\@10k": f"{grouped_df[r'R\@10k'].mean():.3f}",
     }
 
     json.dump(metrics, (EXPORTPATH / "sysrev_metrics.json").open("w"))

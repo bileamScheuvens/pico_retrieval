@@ -81,6 +81,7 @@ class TextEmbedder(Enum):
     PUBMEDBERT = "neuml/pubmedbert-base-embeddings"
     QWEN2 = "Qwen/Qwen2.5-1.5B-Instruct"
     QWEN3 = "Qwen/Qwen3.5-0.8B"
+    QWEN3E = "Qwen/Qwen3-Embedding-0.6B"
 
 
 @dataclass

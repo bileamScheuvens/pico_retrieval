@@ -1,0 +1,5 @@
+# @package _global_
+index_name: recomp_gauss_gauss
+
+model:
+  ckpt_path: checkpoints/gauss_gauss.ckpt
